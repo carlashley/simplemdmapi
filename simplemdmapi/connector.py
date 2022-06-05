@@ -12,8 +12,15 @@ from .typehints import (ListInt,
                         UnionStringPath)
 from functools import wraps
 from itertools import combinations
+from os import getenv
 from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
+
+try:
+    from .proxies import proxy_settings
+except ImportError:
+    proxy_settings = None
+    pass
 
 
 def parse_kwargs(kwargs: RequiredDict) -> RequiredDict:
@@ -78,7 +85,7 @@ class SimpleMDMConnector:
     :param retry_backoff: number of seconds between each retry, increases
                           exponentially based on this value.
     :param http_retry_statuses: list of HTTP status codes to retry on."""
-    def __init__(self, token: UnionStringPath,
+    def __init__(self, token: UnionStringPath = getenv("SIMPLETOKEN"),
                  base_url: str = "https://a.simplemdm.com/api/v1",
                  timeout: TupleInt = (5, ),
                  max_retry: int = 3,
@@ -91,6 +98,7 @@ class SimpleMDMConnector:
                                                                      status_forcelist=http_status_retries,
                                                                      backoff_factor=retry_backoff)))
         self.session.auth = requests.auth.HTTPBasicAuth(read_token(token), '')
+        self.session.proxies.update(proxy_settings) if proxy_settings else None
 
     def required_params(self, params: RequiredDict, reqrd_params: ListString) -> None:
         """Required parameters.

@@ -18,8 +18,8 @@ class Apps(SimpleMDMConnector):
         kwargs["validate_params"] = ["app_store_id", "bundle_id", "binary", "name"]
         kwargs["unique_params"] = ["app_store_id", "bundle_id", "binary"]
 
-        if params.get("name") and not params.get("binary"):
-            raise APIParamException("Error: 'name' parameter cannot be used without 'binary' parameter.")
+        if params.get("name") and not files.get("binary"):
+            raise APIParamException("Error: 'name' parameter cannot be used without 'binary' parameter provided to 'files'.")
 
         return self.post(params=params, files=files, **kwargs).json()  # Return created app object
 
