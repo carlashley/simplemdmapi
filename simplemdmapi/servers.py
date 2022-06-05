@@ -48,3 +48,33 @@ class DEPServers(SimpleMDMConnector):
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.post(url=f"{server_id}", params=params, **kwargs)  # Return ??
+
+
+class PushCertificate(SimpleMDMConnector):
+    """Simple MDM Push Certificates.
+    https://simplemdm.com/docs/api/#push-certificate"""
+    def __init__(self, endpoint: str = "push_certificate") -> None:
+        self.endpoint = endpoint
+        super().__init__()
+
+    def get_csr(self, params: OptionalDict = dict(), **kwargs) -> Any:
+        """Generate a signed CSR for the Apply Push Certificates portal.
+        The certificate is returned in the 'data' key, and can be uploaded as is.
+        :param params: specific parameters to provide to the API query.
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        return self.get(url="scsr", params=params, **kwargs).json()
+
+    def show(self, params: OptionalDict = dict(), **kwargs) -> Any:
+        """Show details of the current push certificate.
+        :param params: specific parameters to provide to the API query.
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        return self.get(params=params, **kwargs).json()  # Return push certificate details object
+
+    def update(self, params: OptionalDict = dict(), files: OptionalDict = dict(), **kwargs) -> Any:
+        """Upload a new certificate (replaces the existing certificate).
+        :param params: specific parameters to provide to the API query.
+        :param files: specific files to upload; example: {"binary": "/tmp/updatedpackage.pkg"}
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        kwargs["validate_params"] = ["apple_id"]
+
+        return self.put(params=params, files=files, **kwargs).json()  # Return certificate details object

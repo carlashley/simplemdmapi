@@ -158,7 +158,8 @@ class SimpleMDMConnector:
                                         already enabled)
                 :param kwargs: any additional arguments to provide to the underlying requests call;
                                example: {"timeout": (5, 15)}"""
-                valid_file_keys = ["binary", "mobileconfig"]
+                kwargs["timeout"] = kwargs.get("timeout", self.timeout)
+                valid_file_keys = ["binary", "file", "mobileconfig"]
                 valid_file_exts = [".mobileconfig", ".pkg", ".plist", ".txt"]
                 file_key = [k for k in valid_file_keys if k in files] if files else None
                 required_params = kwargs.get("required_params", None)
