@@ -1,16 +1,12 @@
 import requests
 
-from .typehints import (ListDict,
-                        ListInt,
+from .typehints import (ListInt,
                         ListString,
                         ListTupleString,
                         OptionalDict,
                         OptionalListDict,
-                        OptionalListInt,
                         OptionalListString,
-                        OptionalResponse,
                         OptionalString,
-                        RequestResponse,
                         RequiredDict,
                         TupleInt,
                         UnionStringPath)
@@ -26,7 +22,7 @@ def parse_kwargs(kwargs: RequiredDict) -> RequiredDict:
     del_kwargs = ["required_params",
                   "url",
                   "unique_params",
-                  "valid_params"]
+                  "validate_params"]
 
     for k, in del_kwargs:
         try:
@@ -35,15 +31,6 @@ def parse_kwargs(kwargs: RequiredDict) -> RequiredDict:
             pass
 
     return kwargs
-
-
-def raise_for_status(req: RequestResponse, ignored_statuses: ListInt) -> None:
-    """Raise an exception error if there is a need. Wrapper of the same function
-    in 'requests.models.Response' class.
-    :param req: the request object.
-    :param ignored_statuses: list of HTTP status codes not to raise an exception for."""
-    if req.status_code not in ignored_statuses:
-        req.raise_for_status()
 
 
 def read_token(fp: UnionStringPath) -> str:
@@ -147,17 +134,21 @@ class SimpleMDMConnector:
     def _request(method: str):
         """Internal decorator method used for the requests package."""
         def decorator(func):
-            @wraps(func)
+            @wraps(func)  # For docstring pass through from original function.
             def _inner(self, url: OptionalString = None,
                        params: OptionalDict = dict(), files: OptionalDict = dict(),
                        ignore_statuses: OptionalListString = list(), **kwargs):
                 """Perform the specified 'requests.request' method.
                 :param url: partial URL path for any additional paths after the URL endpoint;
-                             example: devices/[device_id]
+                            example: 'devices/[device_id]' - this gets joined to the class
+                            'base_url' instance attribute, and the child class 'endpoint' instance
+                            attribute to form the full URL passed to the requests method, using the
+                            example url value, the full URL becomes:
+                                https://a.simplemdm.com/api/v1/devices/[device_id]
                 :param params: any additional parameters to pass on to the API;
-                             example: {"serial_number": "C012345QZS"}
+                               example: {"serial_number": "C012345QZS"}
                 :param files: any files to upload to the API;
-                             example: {"binary": "/tmp/simplemdmapi.pkg"}
+                              example: {"binary": "/tmp/simplemdmapi.pkg"}
                 :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
                                         API in some circumstances returns a status code that will
                                         cause the requests 'raise_for_status' method to raise an
@@ -179,6 +170,11 @@ class SimpleMDMConnector:
                 self.unique_params(params, unique_params) if unique_params else None
                 parse_kwargs(kwargs)  # Pull any kwargs out that should not be passed to 'requests'
                 url = urljoin(self.base_url, self.endpoint, url)  # Join all URL paths together
+
+                # Completely ensure no files are passed to a REST action that does not accept
+                # file upload.
+                if method in ["GET", "DELETE", "PATH"] and files:
+                    files = dict()
 
                 # Use context based file handling
                 if files and file_key:
@@ -203,50 +199,145 @@ class SimpleMDMConnector:
     @_request("DELETE")
     def delete(self, url: OptionalString = None, params: OptionalDict = dict(),
                files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
+        """Perform the specified 'requests.request' method.
+        :param url: partial URL path for any additional paths after the URL endpoint;
+                    example: 'devices/[device_id]' - this gets joined to the class
+                    'base_url' instance attribute, and the child class 'endpoint' instance
+                    attribute to form the full URL passed to the requests method, using the
+                    example url value, the full URL becomes:
+                        https://a.simplemdm.com/api/v1/devices/[device_id]
+        :param params: any additional parameters to pass on to the API;
+                       example: {"serial_number": "C012345QZS"}
+        :param files: unused
+        :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
+                                API in some circumstances returns a status code that will
+                                cause the requests 'raise_for_status' method to raise an
+                                exception even though the status code indicates no actual
+                                error has occurred (for example, the enable remote desktop
+                                API method will return HTTP 400 if remote desktop is
+                                already enabled)
+        :param kwargs: any additional arguments to provide to the underlying requests call;
+                       example: {"timeout": (5, 15)}"""
         return url, params, files, kwargs
 
     @_request("GET")
     def get(self, url: OptionalString = None, params: OptionalDict = dict(),
             files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
+        """Perform the specified 'requests.request' method.
+        :param url: partial URL path for any additional paths after the URL endpoint;
+                    example: 'devices/[device_id]' - this gets joined to the class
+                    'base_url' instance attribute, and the child class 'endpoint' instance
+                    attribute to form the full URL passed to the requests method, using the
+                    example url value, the full URL becomes:
+                        https://a.simplemdm.com/api/v1/devices/[device_id]
+        :param params: any additional parameters to pass on to the API;
+                       example: {"serial_number": "C012345QZS"}
+        :param files: unused
+        :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
+                                API in some circumstances returns a status code that will
+                                cause the requests 'raise_for_status' method to raise an
+                                exception even though the status code indicates no actual
+                                error has occurred (for example, the enable remote desktop
+                                API method will return HTTP 400 if remote desktop is
+                                already enabled)
+        :param kwargs: any additional arguments to provide to the underlying requests call;
+                       example: {"timeout": (5, 15)}"""
         return url, params, files, kwargs
 
     @_request("PATCH")
     def patch(self, url: OptionalString = None, params: OptionalDict = dict(),
               files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
+        """Perform the specified 'requests.request' method.
+        :param url: partial URL path for any additional paths after the URL endpoint;
+                    example: 'devices/[device_id]' - this gets joined to the class
+                    'base_url' instance attribute, and the child class 'endpoint' instance
+                    attribute to form the full URL passed to the requests method, using the
+                    example url value, the full URL becomes:
+                        https://a.simplemdm.com/api/v1/devices/[device_id]
+        :param params: any additional parameters to pass on to the API;
+                       example: {"serial_number": "C012345QZS"}
+        :param files: unused
+        :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
+                                API in some circumstances returns a status code that will
+                                cause the requests 'raise_for_status' method to raise an
+                                exception even though the status code indicates no actual
+                                error has occurred (for example, the enable remote desktop
+                                API method will return HTTP 400 if remote desktop is
+                                already enabled)
+        :param kwargs: any additional arguments to provide to the underlying requests call;
+                       example: {"timeout": (5, 15)}"""
         return url, params, files, kwargs
 
     @_request("POST")
     def post(self, url: OptionalString = None, params: OptionalDict = dict(),
              files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
+        """Perform the specified 'requests.request' method.
+        :param url: partial URL path for any additional paths after the URL endpoint;
+                    example: 'devices/[device_id]' - this gets joined to the class
+                    'base_url' instance attribute, and the child class 'endpoint' instance
+                    attribute to form the full URL passed to the requests method, using the
+                    example url value, the full URL becomes:
+                        https://a.simplemdm.com/api/v1/devices/[device_id]
+        :param params: any additional parameters to pass on to the API;
+                       example: {"serial_number": "C012345QZS"}
+        :param files: any files to upload to the API;
+                      example: {"binary": "/tmp/simplemdmapi.pkg"}
+        :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
+                                API in some circumstances returns a status code that will
+                                cause the requests 'raise_for_status' method to raise an
+                                exception even though the status code indicates no actual
+                                error has occurred (for example, the enable remote desktop
+                                API method will return HTTP 400 if remote desktop is
+                                already enabled)
+        :param kwargs: any additional arguments to provide to the underlying requests call;
+                       example: {"timeout": (5, 15)}"""
         return url, params, files, kwargs
 
     @_request("PUT")
     def put(self, url: OptionalString = None, params: OptionalDict = dict(),
             files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
-        """Delete REST method."""
+        """Perform the specified 'requests.request' method.
+        :param url: partial URL path for any additional paths after the URL endpoint;
+                    example: 'devices/[device_id]' - this gets joined to the class
+                    'base_url' instance attribute, and the child class 'endpoint' instance
+                    attribute to form the full URL passed to the requests method, using the
+                    example url value, the full URL becomes:
+                        https://a.simplemdm.com/api/v1/devices/[device_id]
+        :param params: any additional parameters to pass on to the API;
+                       example: {"serial_number": "C012345QZS"}
+        :param files: any files to upload to the API;
+                      example: {"binary": "/tmp/simplemdmapi.pkg"}
+        :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
+                                API in some circumstances returns a status code that will
+                                cause the requests 'raise_for_status' method to raise an
+                                exception even though the status code indicates no actual
+                                error has occurred (for example, the enable remote desktop
+                                API method will return HTTP 400 if remote desktop is
+                                already enabled)
+        :param kwargs: any additional arguments to provide to the underlying requests call;
+                       example: {"timeout": (5, 15)}"""
         return url, params, files, kwargs
 
     def paginate(self, url: OptionalString = None, params: OptionalDict = dict(),
                  has_more: bool = True, limit: int = 100, starting_after: int = 0,
                  ignore_statuses: OptionalListString = list(), **kwargs) -> OptionalListDict:
         """Paginate function for iterating over endpoints that require pagination.
-                :param url: partial URL path for any additional paths after the URL endpoint;
-                             example: devices/[device_id]
-                :param params: any additional parameters to pass on to the API;
-                                example: {"serial_number": "C012345QZS"}
-                :param limit: maximum number of objects the API will return for each page iteration
-                :param starting_after: the 'offset' value for the next iteration of pagination to start from,
-                                       this is usually the 'id' value of the last object returned in the response
-                :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
-                                        API in some circumstances returns a status code that will
-                                        cause the requests 'raise_for_status' method to raise an
-                                        exception even though the status code indicates no actual
-                                        error has occurred (for example, the enable remote desktop
-                                        API method will return HTTP 400 if remote desktop is
-                                        already enabled)
-                :param kwargs: any additional arguments to provide to the underlying requests
-                               call;
-                               example: {"timeout": (5, 15)}"""
+        :param url: partial URL path for any additional paths after the URL endpoint;
+                     example: devices/[device_id]
+        :param params: any additional parameters to pass on to the API;
+                       example: {"serial_number": "C012345QZS"}
+        :param limit: maximum number of objects the API will return for each page iteration
+        :param starting_after: the 'offset' value for the next iteration of pagination to start from,
+                               this is usually the 'id' value of the last object returned in the response
+        :param ignore_statuses: do not raise exceptions for these HTTP status codes as the
+                                API in some circumstances returns a status code that will
+                                cause the requests 'raise_for_status' method to raise an
+                                exception even though the status code indicates no actual
+                                error has occurred (for example, the enable remote desktop
+                                API method will return HTTP 400 if remote desktop is
+                                already enabled)
+        :param kwargs: any additional arguments to provide to the underlying requests call;
+                       example: {"timeout": (5, 15)}"""
         result: OptionalListDict = list()
 
         if not params:
