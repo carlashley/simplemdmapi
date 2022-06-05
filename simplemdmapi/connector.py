@@ -44,14 +44,11 @@ def read_token(fp: UnionStringPath) -> str:
     """Read token from a file and return the token string, or
     return the string.
     :param fp: string or file path of token"""
-    if not isinstance(fp, Path):
-        fp = Path(fp)
-
-    if fp.is_file() and fp.exists():
+    if Path(fp).is_file() and Path(fp).exists():
         with fp.open("r") as f:
             return f.readlines()[0].strip()
     else:
-        return str(fp)
+        return fp
 
 
 def urljoin(*args) -> str:
