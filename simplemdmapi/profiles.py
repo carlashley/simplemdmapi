@@ -1,5 +1,6 @@
-from .connector import SimpleMDMConnector, APIParamException
+from .connector import SimpleMDMConnector
 from .typehints import OptionalDict, UnionIntString
+from .validators import ParamException
 from typing import Any
 
 
@@ -61,7 +62,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
         kwargs["required_params"] = ["mobileconfig", "name"]
 
         if params.get("name") and not params.get("mobileconfig"):
-            raise APIParamException("Error: 'name' parameter cannot be used without 'mobileconfig' parameter.")
+            raise ParamException("Error: 'name' parameter cannot be used without 'mobileconfig' parameter.")
 
         return self.post(params=params, files=files, **kwargs)  # Returns ??
 

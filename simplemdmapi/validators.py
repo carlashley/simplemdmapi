@@ -4,6 +4,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 
+VALID_FILE_KEYS = ["binary", "file", "mobileconfig"]
+VALID_FILE_EXTS = [".mobileconfig", ".pkg", ".plist", ".txt"]
+
+
 class ParamException(Exception):
     """Raise exceptions for parameters."""
     pass
@@ -12,6 +16,25 @@ class ParamException(Exception):
 class UploadException(Exception):
     """Raise exceptions for file uplaods."""
     pass
+
+
+def urljoin(*args) -> str:
+    """Join parts of a URL together to a full URL path."""
+    return "/".join([x.strip("/") for x in args if x])
+
+
+def read_token(fp: Union[str, Path]) -> str:
+    """Read token from a file and return the token string, or return the string.
+    :param fp: string or file path of token"""
+    try:
+        if Path(fp).is_file() and Path(fp).exists():
+            with Path(fp).open("r") as f:
+                return f.readlines()[0].strip()
+        else:
+            return fp
+    except OSError as e:
+        if e.errno == 63:  # Path too long, probably string!
+            return fp
 
 
 def parse_kwargs(kwargs: Dict[Any, Any]) -> Dict[Any, Any]:

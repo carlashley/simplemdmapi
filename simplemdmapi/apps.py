@@ -1,5 +1,6 @@
-from .connector import SimpleMDMConnector, APIParamException
+from .connector import SimpleMDMConnector
 from .typehints import OptionalDict, UnionIntString
+from .validators import ParamException
 from typing import Any
 
 
@@ -19,7 +20,7 @@ class Apps(SimpleMDMConnector):
         kwargs["unique_params"] = ["app_store_id", "bundle_id", "binary"]
 
         if params.get("name") and not files.get("binary"):
-            raise APIParamException("Error: 'name' parameter cannot be used without 'binary' parameter provided to 'files'.")
+            raise ParamException("Error: 'name' parameter cannot be used without 'binary' parameter provided to 'files'.")
 
         return self.post(params=params, files=files, **kwargs).json()  # Return created app object
 

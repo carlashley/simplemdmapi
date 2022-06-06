@@ -49,13 +49,16 @@ from .typehints import (ListInt,
                         TupleInt,
                         UnionStringPath)
 from .validators import (parse_kwargs,
+                         read_token,
                          required_params,
+                         urljoin,
                          validate_file_exts,
                          validate_params,
-                         validate_unique_params)
+                         validate_unique_params,
+                         VALID_FILE_KEYS,
+                         VALID_FILE_EXTS)
 from functools import wraps
 from os import getenv
-from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
 from typing import Any
 
@@ -63,43 +66,6 @@ try:
     from .proxies import proxy_settings
 except ImportError:
     proxy_settings = None
-    pass
-
-VALID_FILE_KEYS = ["binary", "file", "mobileconfig"]
-VALID_FILE_EXTS = [".mobileconfig", ".pkg", ".plist", ".txt"]
-
-
-def read_token(fp: UnionStringPath) -> str:
-    """Read token from a file and return the token string, or return the string.
-    :param fp: string or file path of token"""
-    try:
-        if Path(fp).is_file() and Path(fp).exists():
-            with Path(fp).open("r") as f:
-                return f.readlines()[0].strip()
-        else:
-            return fp
-    except OSError as e:
-        if e.errno == 63:  # Path too long, probably string!
-            return fp
-
-
-def urljoin(*args) -> str:
-    """Join parts of a URL together to a full URL path."""
-    return "/".join([x.strip("/") for x in args if x])
-
-
-class APIException(Exception):
-    """General API Exception"""
-    pass
-
-
-class APIParamException(APIException):
-    """API Parameter exception"""
-    pass
-
-
-class APIUploadException(APIException):
-    """API File Upload Exception"""
     pass
 
 
