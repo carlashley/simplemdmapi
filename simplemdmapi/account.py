@@ -21,5 +21,5 @@ class Account(SimpleMDMConnector):
         """Update details about the account.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["valid_params"] = ["apple_store_country_code", "name"]
+        kwargs["validate_params"] = ["apple_store_country_code", "name"]
         return self.get(params=params, **kwargs).json()  # Return json content of updated account info

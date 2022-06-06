@@ -16,5 +16,5 @@ OptionalString = Optional[str]
 RequestsResponse = Response
 RequiredDict = Dict[Any, Any]
 TupleInt = Tuple[int, int]
-UnionIntStr = Union[int, str]
+UnionIntString = Union[int, str]
 UnionStringPath = Union[str, Path]

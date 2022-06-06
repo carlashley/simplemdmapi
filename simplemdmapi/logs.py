@@ -14,4 +14,4 @@ class Logs(SimpleMDMConnector):
         """View logged events for device and admin interactions.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.pagination(params=params, **kwargs)  # Return a list of log objects
+        return self.paginate(params=params, **kwargs)  # Return a list of log objects

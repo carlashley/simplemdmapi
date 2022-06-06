@@ -1,5 +1,5 @@
 from .connector import SimpleMDMConnector, APIParamException
-from .typers import OptionalDict, UnionIntString
+from .typehints import OptionalDict, UnionIntString
 from typing import Any
 
 

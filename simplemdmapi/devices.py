@@ -39,7 +39,7 @@ class ManagedDevices(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{device_id}/profiles"
 
-        return self.paginate(url=url, params=params, **kwargs).json()  # Return list of profile objects
+        return self.paginate(url=url, params=params, **kwargs)  # Return list of profile objects
 
     def list_installed_apps(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """List profiles assigned to the device (per-device profiles excluded).
@@ -48,7 +48,7 @@ class ManagedDevices(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{device_id}/installed_apps"
 
-        return self.paginate(url=url, params=params, **kwargs).json()  # Return list of installed app objects
+        return self.paginate(url=url, params=params, **kwargs)  # Return list of installed app objects
 
     def list_users(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """List user accounts on a device (macOS only).
@@ -57,7 +57,7 @@ class ManagedDevices(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{device_id}/users"
 
-        return self.paginate(url=url, params=params, **kwargs).json()  # Return list of user objects
+        return self.paginate(url=url, params=params, **kwargs)  # Return list of user objects
 
     def delete_user(self, device_id: UnionIntString, user_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete a user from a device (macOS only).
@@ -67,7 +67,7 @@ class ManagedDevices(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{device_id}/users/{user_id}"
 
-        return self.paginate(url=url, params=params, **kwargs).json()  # Return 202 status (returns 422 for unsupported devices)
+        return self.paginate(url=url, params=params, **kwargs)  # Return 202 status (returns 422 for unsupported devices)
 
     def retrieve(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Retrieve one application.

@@ -90,7 +90,7 @@ class ManagedAppConfigs(SimpleMDMConnector):
 
         return self.post(url=url, params=params, **kwargs).json()  # Return created app object
 
-    def delete(self, app_id: UnionIntString, config_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def delete_config(self, app_id: UnionIntString, config_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete a managed config for an app.
         :param app_id: the id value.
         :praam config_id: the id value.

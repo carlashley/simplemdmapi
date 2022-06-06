@@ -14,7 +14,7 @@ class DEPServers(SimpleMDMConnector):
         """List all DEP Servers.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.paginate(params=params, **kwargs).json()  # Return list of server objects
+        return self.paginate(params=params, **kwargs)  # Return list of server objects
 
     def list_devices(self, server_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """List all devices for the supplied DEP server.
@@ -47,10 +47,12 @@ class DEPServers(SimpleMDMConnector):
         :param server_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.post(url=f"{server_id}", params=params, **kwargs)  # Return ??
+        url = f"{server_id}/sync"
+
+        return self.post(url=url, params=params, **kwargs)  # Return 202 status
 
 
-class PushCertificate(SimpleMDMConnector):
+class PushCertificates(SimpleMDMConnector):
     """Simple MDM Push Certificates.
     https://simplemdm.com/docs/api/#push-certificate"""
     def __init__(self, endpoint: str = "push_certificate") -> None:
