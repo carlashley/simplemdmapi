@@ -1,5 +1,5 @@
 from .connector import SimpleMDMConnector
-from .typehints import OptionalDict, UnionIntString
+from .typehints import UnionIntString
 from typing import Any
 
 
@@ -10,119 +10,78 @@ class AssignmentGroups(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def assign_app(self, grp_id: UnionIntString, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def assign_app(self, grp_id: UnionIntString, app_id: UnionIntString) -> Any:
         """Assign an application to an assignment group.
-        :param grp_id: the id value.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/apps/{app_id}"
+        :param grp_id: the id value
+        :param app_id: the id value"""
+        return self.post(url=f"{grp_id}/apps/{app_id}")  # Return 204 status
 
-        return self.post(url=url, params=params, **kwargs)  # Return 204 status
-
-    def unassign_app(self, grp_id: UnionIntString, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def unassign_app(self, grp_id: UnionIntString, app_id: UnionIntString) -> Any:
         """Unassign an application from an assignment group.
-        :param grp_id: the id value.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/apps/{app_id}"
+        :param grp_id: the id value
+        :param app_id: the id value"""
+        return self.delete(url=f"{grp_id}/apps/{app_id}")  # Return 204 status
 
-        return self.delete(url=url, params=params, **kwargs)  # Return 204 status
-
-    def assign_device_group(self, grp_id: UnionIntString, device_grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def assign_device_group(self, grp_id: UnionIntString, device_grp_id: UnionIntString) -> Any:
         """Assign a device group to an assignment group.
-        :param grp_id: the id value.
-        :param device_grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/device_groups/{device_grp_id}"
+        :param grp_id: the id value
+        :param device_grp_id: the id value"""
+        return self.post(url=f"{grp_id}/device_groups/{device_grp_id}")  # Return 204 status
 
-        return self.post(url=url, params=params, **kwargs)  # Return 204 status
-
-    def unassign_device_group(self, grp_id: UnionIntString, device_grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def unassign_device_group(self, grp_id: UnionIntString, device_grp_id: UnionIntString) -> Any:
         """Unassign a device group from an assignment group.
-        :param grp_id: the id value.
-        :param device_grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/device_groups/{device_grp_id}"
+        :param grp_id: the id value
+        :param device_grp_id: the id value"""
+        return self.delete(url=f"{grp_id}/device_groups/{device_grp_id}")  # Return 204 status
 
-        return self.delete(url=url, params=params, **kwargs)  # Return 204 status
-
-    def assign_device(self, grp_id: UnionIntString, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def assign_device(self, grp_id: UnionIntString, device_id: UnionIntString) -> Any:
         """Assign a device to an assignment group.
-        :param grp_id: the id value.
-        :param device_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/devices/{device_id}"
+        :param grp_id: the id value
+        :param device_id: the id value"""
+        return self.post(url=f"{grp_id}/devices/{device_id}")  # Return 204 status
 
-        return self.post(url=url, params=params, **kwargs)  # Return 204 status
-
-    def unassign_device(self, grp_id: UnionIntString, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def unassign_device(self, grp_id: UnionIntString, device_id: UnionIntString) -> Any:
         """Unassign a device from an assignment group.
-        :param grp_id: the id value.
-        :param device_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/devices/{device_id}"
+        :param grp_id: the id value
+        :param device_id: the id value"""
+        return self.delete(url=f"{grp_id}/devices/{device_id}")  # Return 204 status
 
-        return self.delete(url=url, params=params, **kwargs)  # Return 204 status
-
-    def create(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def create(self, name: str, auto_deploy: bool = True) -> Any:
         """Create an assignment group.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["auto_deploy", "name"]
-        kwargs["required_params"] = ["name"]
+        :param name: assignment group name
+        :param auto_deploy: whether apps should be automatically pushed when devices join
+                            this assignment group, default is True."""
+        params = self.kwargs2params(self.create, locals(), ["params", "name", "auto_deploy"])
+        return self.post(params=params)  # Return created assignment group object
 
-        return self.post(params=params, **kwargs)  # Return created assignment group object
-
-    def delete_group(self, grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def delete_group(self, grp_id: UnionIntString) -> Any:
         """Delete an assignment group.
-        :param grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.delete(url=f"{grp_id}", params=params, **kwargs)  # Return 204 status
+        :param grp_id: the id value"""
+        return self.delete(url=f"{grp_id}")  # Return 204 status
 
-    def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
-        """List all assignment groups.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.paginate(params=params, **kwargs)  # Return list of assignment group objects
+    def list_all(self) -> Any:
+        """List all assignment groups."""
+        return self.paginate()  # Return all assignment group objects
 
-    def retrieve(self, grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def retrieve(self, grp_id: UnionIntString) -> Any:
         """Retrieve one application.
-        :param grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get(url=f"{grp_id}", params=params, **kwargs).json()  # Return assignment group object
+        :param grp_id: the id value"""
+        return self.get(url=f"{grp_id}").json()  # Return assignment group object
 
-    def update(self, grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def update(self, grp_id: UnionIntString, name: str, auto_deploy: bool = True) -> Any:
         """Update details about an assignment group.
-        :param grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["auto_deploy", "name"]
-        kwargs["required_params"] = ["name"]
+        :param grp_id: the id value
+        :param auto_deploy: whether apps should be automatically pushed when devices join
+                            this assignment group, default is True."""
+        params = self.kwargs2params(self.update, locals(), ["params", "grp_id", "name", "auto_deploy"])
+        return self.patch(url=f"{grp_id}", params=params)  # Return 204 status
 
-        return self.patch(url=f"{grp_id}", params=params, **kwargs)  # Return 204 status
-
-    def push_apps(self, grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def push_apps(self, grp_id: UnionIntString) -> Any:
         """Push applications to an assignment group.
-        :param grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/push_apps"
+        :param grp_id: the id value"""
+        return self.post(url=f"{grp_id}/push_apps")  # Return 202 status
 
-        return self.post(url=url, params=params, **kwargs)  # Return 202 status
-
-    def update_apps(self, grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def update_apps(self, grp_id: UnionIntString) -> Any:
         """Push application updates to an assignment group.
-        :param grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{grp_id}/update_apps"
-
-        return self.post(url=url, params=params, **kwargs)  # Return 202 status
+        :param grp_id: the id value"""
+        return self.post(url=f"{grp_id}/update_apps")  # Return 202 status

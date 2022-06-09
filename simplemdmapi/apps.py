@@ -1,6 +1,5 @@
 from .connector import SimpleMDMConnector
-from .typehints import OptionalDict, UnionIntString
-from .validators import ParamException
+from .typehints import OptionalString, OptionalDict, UnionIntString
 from typing import Any
 
 
@@ -11,57 +10,46 @@ class Apps(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def create(self, params: OptionalDict = dict(), files: OptionalDict = dict(), **kwargs) -> Any:
-        """Upload/create an app.
-        :param params: specific parameters to provide to the API query.
-        :param files: file to upload (optional).
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["app_store_id", "bundle_id", "binary", "name"]
-        kwargs["unique_params"] = ["app_store_id", "bundle_id", "binary"]
+    def create(self, app_store_id: OptionalString = None, bundle_id: OptionalString = None,
+               binary: OptionalString = None, name: OptionalString = None) -> Any:
+        """Upload/create an app. Can only supply one of 'app_store_id', 'bundle_id', or 'binary'.
+        The 'name' param can only be used with the 'binary' param.
+        :param app_store_id: the Apple Store id value for the app to add
+        :param bundle_id: the bundle id value for the app to add
+        :param binary: file path (as a string) to the app to upload, can only upload '.pkg' files
+        :param name: the name to use when uploading a binary"""
+        files = {"binary": binary} if binary else dict()
+        params = self.kwargs2params(self.create, locals(), ["params", "files"])
+        return self.post(params=params, files=files, upload_key="binary").json()  # Return created app object
 
-        if params.get("name") and not files.get("binary"):
-            raise ParamException("Error: 'name' parameter cannot be used without 'binary' parameter provided to 'files'.")
-
-        return self.post(params=params, files=files, **kwargs).json()  # Return created app object
-
-    def delete_app(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def delete_app(self, app_id: UnionIntString) -> Any:
         """Delete an app.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.delete(url=f"{app_id}", params=params, **kwargs)  # Return 204 status
+        :param app_id: the id value"""
+        return self.delete(url=f"{app_id}")  # Return 204 status
 
-    def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def list_all(self) -> Any:
+        """List all applications."""
+        self.paginate()  # Return list of app objects
+
+    def list_installs(self, app_id: UnionIntString) -> Any:
         """List all applications.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        self.paginate(params=params, **kwargs)  # Return list of app objects
+        :param app_id: the id value"""
+        return self.paginate(url=f"{app_id}/installs")  # Return list of app install objects
 
-    def list_installs(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
-        """List all applications.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{app_id}/installs"
-
-        return self.paginate(url=url, params=params, **kwargs)  # Return list of app install objects
-
-    def retrieve(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def retrieve(self, app_id: UnionIntString) -> Any:
         """Retrieve one application.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get(url=f"{app_id}", params=params, **kwargs).json()  # Return app object
+        :param app_id: the id value"""
+        return self.get(url=f"{app_id}").json()  # Return app object
 
-    def update(self, app_id: UnionIntString, params: OptionalDict = dict(), files: OptionalDict = dict(), **kwargs) -> Any:
+    def update(self, app_id: UnionIntString, binary: OptionalString = None,
+               deploy_to: OptionalString = None, name: OptionalString = None) -> Any:
         """Update details about an app.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param files: specific files to upload; example: {"binary": "/tmp/updatedpackage.pkg"}
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["binary", "deploy_to", "name"]
-
-        return self.patch(url=f"{app_id}", params=params, files=files, **kwargs).json()  # Return app update object
+        :param app_id: the id value
+        :param binary: file path (as a string) to the app to upload, can only upload '.pkg' files
+        :param name: the name to use when uploading a binary"""
+        files = {"binary": binary} if binary else dict()
+        params = self.kwargs2params(self.update, locals(), ["params", "app_id", "files"])
+        return self.patch(url=f"{app_id}", params=params, files=files, upload_key="binary").json()  # Return app update object
 
 
 class ManagedAppConfigs(SimpleMDMConnector):
@@ -71,41 +59,28 @@ class ManagedAppConfigs(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def get_config(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def get_config(self, app_id: UnionIntString) -> Any:
         """Retrieve managed application configuration.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{app_id}/managed_configs"
+        :param app_id: the id value"""
+        return self.get(url=f"{app_id}/managed_configs").json()  # Return app object
 
-        return self.get(url=url, params=params, **kwargs).json()  # Return app object
-
-    def create(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def create(self):  # , app_id: UnionIntString, key: str, value: OptionalString = None, value_type: OptionalString = None) -> Any:
         """Create a managed app config.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["key", "value", "value_type"]
-        kwargs["required_params"] = ["key"]
-        url = f"{app_id}/managed_configs"
-
-        return self.post(url=url, params=params, **kwargs).json()  # Return created app object
+        :param key: the key name.
+        :param value: default value the key will have
+        :param value_type: the type the value is expected to be"""
+        return NotImplemented
+        # params = self.kwargs2params(self.create, locals(), ["params", "app_id"])
+        # return self.post(url=f"{app_id}/managed_configs", params=params).json()  # Return created app object
 
     def delete_config(self, app_id: UnionIntString, config_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete a managed config for an app.
-        :param app_id: the id value.
-        :praam config_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{app_id}/managed_configs/{config_id}"
-
-        return self.delete(url=url, params=params, **kwargs)  # Return 204 status
+        :param app_id: the id value
+        :praam config_id: the id value"""
+        return self.delete(url=f"{app_id}/managed_configs/{config_id}")  # Return 204 status
 
     def push_updates(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
-        """Push a managed config for an app to all devices with that app.
-        :param app_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{app_id}/managed_configs/push"
-
-        return self.patch(url=url, params=params, **kwargs).json()  # Return app update object
+        """Push a managed config for an app to all devices with that app. Only required for changes
+        made to a managed app config via API.
+        :param app_id: the id value"""
+        return self.post(url=f"{app_id}/managed_configs/push").json()  # Return app update object

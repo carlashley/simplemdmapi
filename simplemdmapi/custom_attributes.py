@@ -1,5 +1,5 @@
 from .connector import SimpleMDMConnector
-from .typehints import OptionalDict, UnionIntString
+from .typehints import OptionalString, UnionIntString
 from typing import Any
 
 
@@ -10,40 +10,30 @@ class CustomAttributes(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def create(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def create(self, name: str, default_value: OptionalString = None) -> Any:
         """Create an custom attribute.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["required_params"] = ["name"]
-        kwargs["validate_params"] = ["default_value", "name"]
+        :param name: name of the custom attribute
+        :param default_value: the default value of the custom attribute"""
+        params = self.kwargs2params(self.create, locals(), ["params", "name", "default_value"])
+        return self.post(params=params).json()  # Return custom attribute object
 
-        return self.post(params=params, **kwargs).json()  # Return custom attribute object
-
-    def delete_attribute(self, attr_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def delete_attribute(self, attr_id: UnionIntString) -> Any:
         """Delete an custom attribute.
-        :param attr_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.delete(url=f"{attr_id}", params=params, **kwargs).json()  # Return ??
+        :param attr_id: the id value"""
+        return self.delete(url=f"{attr_id}").json()  # Return ??
 
-    def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
-        """List all custom attributes.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.paginate(params=params, **kwargs)  # Return list of custom attribute objects
+    def list_all(self) -> Any:
+        """List all custom attributes."""
+        return self.paginate()  # Return list of custom attribute objects
 
-    def retrieve(self, attr_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def retrieve(self, attr_id: UnionIntString) -> Any:
         """Retrieve one application.
-        :param attr_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get(url=f"{attr_id}", params=params, **kwargs).json()  # Return custom attribute object
+        :param attr_id: the id value"""
+        return self.get(url=f"{attr_id}").json()  # Return custom attribute object
 
-    def update(self, attr_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def update(self, attr_id: UnionIntString, default_value: OptionalString = None) -> Any:
         """Update details about an custom attribute.
-        :param attr_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["default_value"]
-
-        return self.patch(url=f"{attr_id}", params=params, **kwargs).json()  # Return ??
+        :param attr_id: the id value
+        :param default_value: the updated default value"""
+        params = self.kwargs2params(self.update, locals(), ["params", "attr_id", "default_value"])
+        return self.patch(url=f"{attr_id}", params=params).json()  # Return ??

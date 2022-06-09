@@ -1,72 +1,75 @@
-"""SimpleMDM API Connector.
-class: SimpleMDMConnector
-    parameters:
-        token: token as a string, or a path to the file containing the token.
-        base_url: base URL for the SimpleMDM API.
-        timeout: a tuple of seconds for the connect timeout and read
-                 timeout; default is 5 seconds for connection, and no
-                 timeout for read.
-        max_retry: number of times a request is retried before failing.
-        retry_backoff: number of seconds between each retry, increases
-                       exponentially based on this value.
-        http_retry_statuses: list of HTTP status codes to retry on.
-
-    methods:
-        delete
-        get
-        paginate
-        patch
-        post
-        put
-
-    method parameters:
-        url: partial URL path for any additional paths after the URL endpoint;
-             example: 'devices/[device_id]' - this gets joined to the class
-             'base_url' instance attribute, and the child class 'endpoint' instance
-             attribute to form the full URL passed to the requests method, using the
-             example url value, the full URL becomes:
-                 https://a.simplemdm.com/api/v1/devices/[device_id]
-        params: any additional parameters to pass on to the API;
-                example: {"serial_number": "C012345QZS"}
-        files: only used for API methods that upload files.
-        ignore_statuses: do not raise exceptions for these HTTP status codes as the
-                         API in some circumstances returns a status code that will
-                         cause the requests 'raise_for_status' method to raise an
-                         exception even though the status code indicates no actual
-                         error has occurred (for example, the enable remote desktop
-                         API method will return HTTP 400 if remote desktop is
-                         already enabled)
-        kwargs: any additional arguments to provide to the underlying requests call;
-                       example: {"timeout": (5, 15)}"""
-
+"""SimpleMDM API Connector."""
+import inspect
 import requests
 
-from .typehints import (ListInt,
+from .typehints import (Function,
+                        ListInt,
+                        ListString,
                         OptionalDict,
-                        OptionalListDict,
-                        OptionalListString,
                         OptionalString,
+                        RequiredDict,
+                        RequestsResponse,
+                        TupleAny,
                         TupleInt,
                         UnionStringPath)
-from .validators import (parse_kwargs,
-                         read_token,
-                         required_params,
-                         urljoin,
-                         validate_file_exts,
-                         validate_params,
-                         validate_unique_params,
-                         VALID_FILE_KEYS,
-                         VALID_FILE_EXTS)
-from functools import wraps
+from .validators import VALID_FILE_KEYS
 from os import getenv
+from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
-from typing import Any
 
 try:
     from .proxies import proxy_settings
 except ImportError:
     proxy_settings = None
     pass
+
+
+def clean_kwargs(kwargs: RequiredDict) -> RequiredDict:
+    """Clean the kwarg dictionary to remove keys that are not standard 'requests.request' API params."""
+    requests_api_args = ["method",
+                         "url",
+                         "params",
+                         "data",
+                         "json",
+                         "headers",
+                         "cookies",
+                         "files",
+                         "auth",
+                         "timeout",
+                         "allow_redirects",
+                         "proxies",
+                         "verify",
+                         "stream",
+                         "cert"]
+
+    # work on a copy of kwargs because we're modifying it
+    for k, _ in kwargs.copy().items():
+        if k not in requests_api_args:
+            try:
+                del kwargs[k]
+            except KeyError:
+                pass
+
+    return kwargs
+
+
+def read_token(fp: UnionStringPath) -> str:
+    """Read token from a file and return the token string, or return the string.
+    :param fp: string or file path of token"""
+    try:
+        if Path(fp).is_file() and Path(fp).exists():
+            with Path(fp).open("r") as f:
+                return f.readlines()[0].strip()
+        else:
+            return fp
+    except OSError as e:
+        if e.errno == 63:  # Path too long, probably string!
+            return fp
+
+
+def urljoin(*args) -> str:
+    """Return a URL joined together."""
+    return "/".join([x.strip("/") for x in args if x])
 
 
 class SimpleMDMConnector:
@@ -96,119 +99,118 @@ class SimpleMDMConnector:
                                                                      backoff_factor=retry_backoff)))
         self.session.auth = requests.auth.HTTPBasicAuth(self._token, '')
 
-    def _prepare_request(self, method: str, url: str, params: OptionalDict = dict(),
-                         files: OptionalDict = dict(), **kwargs) -> Any:
-        """Create a prepared request for use with the session."""
-        req = requests.Request(method=method, url=url, params=params, files=files)
-        prepared_req = self.session.prepare_request(req)
-        env_settings = self.session.merge_environment_settings(prepared_req.url, {}, None, None, None)
+    def _parser(self, url: OptionalString = None, **kwargs) -> TupleAny:
+        """Pre parse all internal HTTP request methods."""
+        url = urljoin(self.base_url, self.endpoint, url)
+        ignore_statuses = kwargs.get("ignore_statuses", list())
+        kwargs = clean_kwargs(kwargs)
+        kwargs["timeout"] = kwargs.get("timeout", self.timeout)
 
-        return self.session.send(prepared_req, **env_settings, **kwargs)
+        return url, ignore_statuses, kwargs
 
-    def _request(method: str):
-        """Internal decorator method used for the requests package."""
-        def decorator(func):
-            @wraps(func)  # For docstring pass through from original function.
-            def _inner(self, url: OptionalString = None,
-                       params: OptionalDict = dict(), files: OptionalDict = dict(),
-                       ignore_statuses: OptionalListString = list(), **kwargs):
-                """Inner funciton that does the heavy lifing"""
-                url = urljoin(self.base_url, self.endpoint, url)  # Join all URL paths together
-                kwargs["timeout"] = kwargs.get("timeout", self.timeout)
-                file_key = [k for k in VALID_FILE_KEYS if k in files] if files else None
-                _required_params = kwargs.get("required_params", None)
-                _validate_params = kwargs.get("validate_params", None)
-                _unique_params = kwargs.get("unique_params", None)
+    def delete(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
+        """DELETE"""
+        url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
+        req = self.session.delete(url, **kwargs)
 
-                required_params(params, _required_params) if _required_params else None
-                validate_params(params, _validate_params) if _validate_params else None
-                validate_file_exts(files, VALID_FILE_KEYS) if files else None
-                validate_unique_params(params, _unique_params) if _unique_params else None
-                parse_kwargs(kwargs)  # Pull any kwargs out that should not be passed to 'requests'
+        if req.status_code not in ignore_statuses:
+            req.raise_for_status()
 
-                # Completely ensure no files are passed to a REST action that does not accept
-                # file upload.
-                if method in ["GET", "DELETE", "PATH"] and files:
-                    files = dict()
+        return req
 
-                # Use context based file handling
-                if files and file_key:
-                    try:
-                        fp = files.copy()[file_key][0]  # Work on a copy of the dict for safety
-                        self.validate_file_extensions(fp, VALID_FILE_EXTS)
+    def get(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
+        """GET"""
+        url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
+        req = self.session.get(url, **kwargs)
 
-                        with open(fp, "rb") as f:
-                            files[file_key[0]] = f
-                            req = self._prepare_request(method=method, url=url, params=params, files=files, **kwargs)
-                    except KeyError:
-                        raise
-                else:
-                    req = self._prepare_request(method=method, url=url, params=params, files=files, **kwargs)
+        if req.status_code not in ignore_statuses:
+            req.raise_for_status()
 
-                # Only raies HTTP status exceptions
-                req.raise_for_status() if req.status_code not in ignore_statuses else None
-                return req
-            return _inner
-        return decorator
+        return req
 
-    @_request("DELETE")
-    def delete(self, url: OptionalString = None, params: OptionalDict = dict(),
-               files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
-        """Delete"""
-        return url, params, files, kwargs
+    def patch(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
+        """PATCH"""
+        url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
+        req = self.session.patch(url, **kwargs)
 
-    @_request("GET")
-    def get(self, url: OptionalString = None, params: OptionalDict = dict(),
-            files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
-        """Get"""
-        return url, params, files, kwargs
+        if req.status_code not in ignore_statuses:
+            req.raise_for_status()
 
-    @_request("PATCH")
-    def patch(self, url: OptionalString = None, params: OptionalDict = dict(),
-              files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
-        """Patch"""
-        return url, params, files, kwargs
+        return req
 
-    @_request("POST")
-    def post(self, url: OptionalString = None, params: OptionalDict = dict(),
-             files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
-        """Post"""
-        return url, params, files, kwargs
+    def post(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
+        """POST"""
+        upload_key = kwargs.get("upload_key")
+        url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
+        req = None
 
-    @_request("PUT")
-    def put(self, url: OptionalString = None, params: OptionalDict = dict(),
-            files: OptionalDict = dict(), ignore_statuses: OptionalListString = list(), **kwargs):
-        """Put"""
-        return url, params, files, kwargs
+        if kwargs.get("files"):
+            fp = Path(kwargs["files"][upload_key])
 
-    def paginate(self, url: OptionalString = None, params: OptionalDict = dict(),
-                 has_more: bool = True, limit: int = 100, starting_after: int = 0,
-                 ignore_statuses: OptionalListString = list(), **kwargs) -> OptionalListDict:
-        """Paginate"""
-        result: OptionalListDict = list()
-        paginate_params = ["limit", "starting_after"]  # Required for pagination
-
-        if not kwargs.get("validate_params"):
-            kwargs["validate_params"] = paginate_params
+            with fp.open("rb") as f:
+                kwargs["files"][upload_key] = f
+                req = self.session.post(url, **kwargs)
         else:
-            kwargs["validate_params"].extend(paginate_params)
+            req = self.session.post(url, **kwargs)
 
-        if not params:
-            params["limit"] = limit
-            params["starting_after"] = starting_after
+        if req.status_code not in ignore_statuses:
+            req.raise_for_status()
+
+        return req
+
+    def put(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
+        """PUT"""
+        upload_key = kwargs.get("upload_key")
+        url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
+        req = None
+
+        if kwargs.get("files"):
+            fp = Path(kwargs["files"][upload_key])
+
+            with fp.open("rb") as f:
+                kwargs["files"][upload_key] = f
+                req = self.session.put(url, **kwargs)
+        else:
+            req = self.session.put(url, **kwargs)
+
+        if req.status_code not in ignore_statuses:
+            req.raise_for_status()
+
+        return req
+
+    def paginate(self, url: OptionalString = None, starting_after: int = 0, limit: int = 100,
+                 has_more: bool = True, **kwargs) -> RequiredDict:
+        """Paginate over results.
+        :param url: URL to paginate
+        :param starting_after: record to start indexing/paginating from
+        :param limit: maximum number of objects to send per pagination request"""
+        result: OptionalDict = {"has_more": has_more, "data": list()}
+        paginate_params = {"starting_after": starting_after, "limit": limit}
+
+        if kwargs.get("params"):
+            kwargs["params"].update(paginate_params)
+        else:
+            kwargs["params"] = paginate_params
 
         while has_more:
-            req = self.get(url=url, params=params, files=dict(), ignore_statuses=ignore_statuses, **kwargs)
-
-            if has_more and req.json() and req.json().get("data"):
-                result.extend(req.json()["data"])
-                params["starting_after"] = str(req.json()["data"][-1].get("id"))
-                has_more = req.json().get("has_more", False)
-            else:
-                if req.json().get("data"):
-                    result.extend(req.json()["data"])
-                    has_more = req.json().get("has_more", False)
-                else:
-                    break
+            req = self.req.get(url=url, **kwargs)
+            response = req.json()
+            result["data"].extend(response.get("data", list()))
+            kwargs["params"]["starting_after"] = response["data"][-1].get("id")
+            has_more = response.get("has_more", False)
+            result["has_more"] = has_more
 
         return result
+
+    def kwargs2params(self, func: Function, vals: RequiredDict, ignored_locals: ListString) -> RequiredDict:
+        """Convert optional arguments in implemented API methods to dictionary values
+        usable in the 'params' argument for various 'requests' HTTP methods. Ignores any keys that have the same
+        name as any of the 'VALID_FILE_KEYS' as these are passed to underlying 'requests' HTTP methods using the
+        'files' param for each relevant HTTP method.
+        :param func: function to inspect
+        :param vals: the values within the function, this is provided by calling 'locals()'
+        :param ignored_locals: a list of strings of any local names to ignore, typically
+                               this will be any required positionals passed to the function"""
+        signature = inspect.signature(func)
+        return {p.name: vals.get(p.name) for p in signature.parameters
+                if p not in ignored_locals and vals.get(p.name) and vals.get(p.name) not in VALID_FILE_KEYS}
