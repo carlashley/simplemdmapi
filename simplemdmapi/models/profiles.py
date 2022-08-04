@@ -1,12 +1,14 @@
-from .connector import SimpleMDMConnector
-from .typehints import OptionalDict, UnionIntString
+from ..api import SimpleMDMConnector
+from ..typehints import OptionalDict, UnionIntString
 from .validators import ParamException
 from typing import Any
 
 
 class CustomConfigProfiles(SimpleMDMConnector):
-    """Simple MDM Custom Configuration Profiles.
-    https://simplemdm.com/docs/api/#custom-configuration-profiles"""
+    """Custom Configuration Profiles.
+
+    SimpleMDM API Documentation: https://simplemdm.com/docs/api/#custom-configuration-profiles
+    """
     def __init__(self, endpoint: str = "custom_configuration_profiles") -> None:
         self.endpoint = endpoint
         super().__init__()
@@ -15,6 +17,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def assign_to_device_group(self, profile_id: UnionIntString, device_grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Assign a custom configuration profile to a device group.
+
         :param profile_id: the id value.
         :param device_grp_id: the id value.
         :param params: specific parameters to provide to the API query.
@@ -25,6 +28,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def unassign_from_device_group(self, profile_id: UnionIntString, device_grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Unassign a custom configuration profile from a device group.
+
         :param profile_id: the id value.
         :param device_grp_id: the id value.
         :param params: specific parameters to provide to the API query.
@@ -35,6 +39,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def assign_to_device(self, profile_id: UnionIntString, grp_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Assign a custom configuration profile to a device group.
+
         :param profile_id: the id value.
         :param grp_id: the id value.
         :param params: specific parameters to provide to the API query.
@@ -45,6 +50,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def unassign_from_device(self, profile_id: UnionIntString, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Unassign a custom configuration profile from a device group.
+
         :param profile_id: the id value.
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
@@ -55,6 +61,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def create(self, params: OptionalDict = dict(), files: OptionalDict = dict(), **kwargs) -> Any:
         """Upload/create a custom configuration profile.
+
         :param params: specific parameters to provide to the API query.
         :param files: file to upload.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -68,6 +75,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def delete_profile(self, profile_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete a custom configuration profile.
+
         :param profile_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -75,12 +83,14 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
         """List all custom configuration profiles.
+
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.paginate(params=params, **kwargs)  # Returns a list of profile objects
 
     def retrieve(self, profile_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Retrieve one custom configuration profile.
+
         :param profile_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -90,6 +100,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
 
     def update(self, profile_id: UnionIntString, params: OptionalDict = dict(), files: OptionalDict = dict(), **kwargs) -> Any:
         """Update details about a custom configuration profile.
+
         :param profile_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param files: file to upload.

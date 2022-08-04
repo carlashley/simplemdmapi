@@ -17,56 +17,6 @@ class UploadException(Exception):
     """Raise exceptions for file uplaods."""
     pass
 
-
-def urljoin(*args) -> str:
-    """Join parts of a URL together to a full URL path."""
-    return "/".join([x.strip("/") for x in args if x])
-
-
-def read_token(fp: Union[str, Path]) -> str:
-    """Read token from a file and return the token string, or return the string.
-    :param fp: string or file path of token"""
-    try:
-        if Path(fp).is_file() and Path(fp).exists():
-            with Path(fp).open("r") as f:
-                return f.readlines()[0].strip()
-        else:
-            return fp
-    except OSError as e:
-        if e.errno == 63:  # Path too long, probably string!
-            return fp
-
-
-def parse_kwargs(kwargs: Dict[Any, Any]) -> Dict[Any, Any]:
-    """Pre-parse kwarg dictionary to remove keys that are not
-    standard 'requests.request' API params."""
-    requests_api_args = ["method",
-                         "url",
-                         "params",
-                         "data",
-                         "json",
-                         "headers",
-                         "cookies",
-                         "files",
-                         "auth",
-                         "timeout",
-                         "allow_redirects",
-                         "proxies",
-                         "verify",
-                         "stream",
-                         "cert"]
-
-    # work on a copy of kwargs because we're modifying it
-    for k, _ in kwargs.copy().items():
-        if k not in requests_api_args:
-            try:
-                del kwargs[k]
-            except KeyError:
-                pass
-
-    return kwargs
-
-
 def required_params(params: List[Any], reqd_params: List[Any]) -> None:
     """Validated required parameters exist"""
     missing_params: List[str] = list()

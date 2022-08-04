@@ -1,17 +1,20 @@
-from .connector import SimpleMDMConnector
-from .typehints import OptionalDict, UnionIntString
+from ..api import SimpleMDMConnector
+from ..typehints import OptionalDict, UnionIntString
 from typing import Any
 
 
 class ManagedDevices(SimpleMDMConnector):
-    """Simple MDM Managed Devices.
-    https://simplemdm.com/docs/api/#devices"""
+    """Managed Devices.
+
+    SimpleMDM API Documentation: https://simplemdm.com/docs/api/#devices
+    """
     def __init__(self, endpoint: str = "devices") -> None:
         self.endpoint = endpoint
         super().__init__()
 
     def create(self, params: OptionalDict = dict(), **kwargs) -> Any:
         """Create a device.
+
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         kwargs["validate_params"] = ["group_id", "name"]
@@ -20,12 +23,14 @@ class ManagedDevices(SimpleMDMConnector):
 
     def delete(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete a device.
+
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.delete(url=f"{device_id}", params=params, **kwargs)  # Return 204 status
 
     def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
         """List all devices.
+
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         kwargs["validate_params"] = ["include_awaiting_enrollment", "search"]
@@ -34,6 +39,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def list_profiles(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """List profiles assigned to the device (per-device profiles excluded).
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -43,6 +49,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def list_installed_apps(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """List profiles assigned to the device (per-device profiles excluded).
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -52,6 +59,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def list_users(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """List user accounts on a device (macOS only).
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -61,6 +69,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def delete_user(self, device_id: UnionIntString, user_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete a user from a device (macOS only).
+
         :param device_id: the id value.
         :param user_id: the id value.
         :param params: specific parameters to provide to the API query.
@@ -71,6 +80,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def retrieve(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Retrieve one application.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -78,6 +88,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def update(self, params: OptionalDict = dict(), **kwargs) -> Any:
         """Update a device.
+
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         kwargs["validate_params"] = ["device_name", "name"]
@@ -86,6 +97,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def get_attribute(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Get custom attributes for a specific device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -95,6 +107,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def set_attribute(self, device_id: UnionIntString, attr_name: str, params: OptionalDict = dict(), **kwargs) -> Any:
         """Get custom attributes for a specific device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -107,6 +120,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def push_assigned_apps(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Push apps not already installed on da device to that device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -116,6 +130,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def refresh(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Refresh device information and app inventory for a device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -125,6 +140,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def restart(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Send a restart command to a device
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -135,6 +151,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def shutdown(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Send a shutdown command to a device
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -144,6 +161,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def lock(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Lock a device and optionally display a message and phone number.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -154,6 +172,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def enable_lost_mode(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Turn lost mode on for a device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -165,6 +184,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def disable_lost_mode(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Turn lost mode off for a device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -174,6 +194,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def play_sound(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Play a sound on a device. Only works when the device is in lost mode.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -183,6 +204,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def update_location(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Request the device provide the current and up-to-date location.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -192,6 +214,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def clear_passcode(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Remove the passcode from a device.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -201,6 +224,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def clear_firmware_password(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Remove a firmware password from a device. Only works if the password was originally set by SimpleMDM.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -210,6 +234,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def rotate_filevault_key(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Rotate the FileVault recovery key of a device. SimpleMDM must be aware of the existing recovery key.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -219,8 +244,10 @@ class ManagedDevices(SimpleMDMConnector):
 
     def wipe(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Wipe the device (Erase all Contents and Settings). Unenrolls device and returns to factory config.
+
         The 'pin' parameter must be supplied if the device is a Mac that does not have a T2 chip (presumably
         applies to Apple Silicon?).
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -231,6 +258,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def update_os(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Update the device to the latest OS release. Currently only supported by iOS devices.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -240,9 +268,11 @@ class ManagedDevices(SimpleMDMConnector):
 
     def enable_remote_desktop(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Enable Remote Desktop on the specified device. macOS 10.14.4+ only.
+
         This call will return a HTTP 400 error if Remote Desktop is already enabled on the target device,
         so the 'ignore_statuses' argument is supplied in the 'post' call to ignore any exception that
         'requests' would raise.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -252,6 +282,7 @@ class ManagedDevices(SimpleMDMConnector):
 
     def disable_remote_desktop(self, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Disable Remote Desktop on the specified device. macOS 10.14.4+ only.
+
         :param device_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""

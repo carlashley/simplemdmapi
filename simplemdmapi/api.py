@@ -13,6 +13,7 @@ from .typehints import (Function,
                         TupleInt,
                         UnionStringPath)
 from .validators import VALID_FILE_KEYS
+from .utils import clean_kwargs, read_token, urljoin
 from os import getenv
 from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
@@ -23,57 +24,14 @@ except ImportError:
     proxy_settings = None
     pass
 
-
-def clean_kwargs(kwargs: RequiredDict) -> RequiredDict:
-    """Clean the kwarg dictionary to remove keys that are not standard 'requests.request' API params."""
-    requests_api_args = ["method",
-                         "url",
-                         "params",
-                         "data",
-                         "json",
-                         "headers",
-                         "cookies",
-                         "files",
-                         "auth",
-                         "timeout",
-                         "allow_redirects",
-                         "proxies",
-                         "verify",
-                         "stream",
-                         "cert"]
-
-    # work on a copy of kwargs because we're modifying it
-    for k, _ in kwargs.copy().items():
-        if k not in requests_api_args:
-            try:
-                del kwargs[k]
-            except KeyError:
-                pass
-
-    return kwargs
-
-
-def read_token(fp: UnionStringPath) -> str:
-    """Read token from a file and return the token string, or return the string.
-    :param fp: string or file path of token"""
-    try:
-        if Path(fp).is_file() and Path(fp).exists():
-            with Path(fp).open("r") as f:
-                return f.readlines()[0].strip()
-        else:
-            return fp
-    except OSError as e:
-        if e.errno == 63:  # Path too long, probably string!
-            return fp
-
-
-def urljoin(*args) -> str:
-    """Return a URL joined together."""
-    return "/".join([x.strip("/") for x in args if x])
+# TO DO - 2022-08-04-215:
+# - check if the 'required_params' and 'validate_params' in 'validators' is required
+# - move items in 'validators' into 'utils'
 
 
 class SimpleMDMConnector:
     """Simple MDM API Connector
+
     :param token: token as a string, or a path to the file containing the token.
     :param base_url: base URL for the SimpleMDM API.
     :param timeout: a tuple of seconds for the connect timeout and read
@@ -100,7 +58,10 @@ class SimpleMDMConnector:
         self.session.auth = requests.auth.HTTPBasicAuth(self._token, '')
 
     def _parser(self, url: OptionalString = None, **kwargs) -> TupleAny:
-        """Pre parse all internal HTTP request methods."""
+        """Pre parse all internal HTTP request methods.
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'"""
         url = urljoin(self.base_url, self.endpoint, url)
         ignore_statuses = kwargs.get("ignore_statuses", list())
         kwargs = clean_kwargs(kwargs)
@@ -109,7 +70,10 @@ class SimpleMDMConnector:
         return url, ignore_statuses, kwargs
 
     def delete(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
-        """DELETE"""
+        """DELETE
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'"""
         url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
         req = self.session.delete(url, **kwargs)
 
@@ -119,7 +83,10 @@ class SimpleMDMConnector:
         return req
 
     def get(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
-        """GET"""
+        """GET
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'"""
         url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
         req = self.session.get(url, **kwargs)
 
@@ -129,7 +96,10 @@ class SimpleMDMConnector:
         return req
 
     def patch(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
-        """PATCH"""
+        """PATCH
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'"""
         url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
         req = self.session.patch(url, **kwargs)
 
@@ -139,7 +109,10 @@ class SimpleMDMConnector:
         return req
 
     def post(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
-        """POST"""
+        """POST
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'"""
         upload_key = kwargs.get("upload_key")
         url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
         req = None
@@ -159,7 +132,10 @@ class SimpleMDMConnector:
         return req
 
     def put(self, url: OptionalString = None, **kwargs) -> RequestsResponse:
-        """PUT"""
+        """PUT
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'"""
         upload_key = kwargs.get("upload_key")
         url, ignore_statuses, kwargs = self._parser(url=url, **kwargs)
         req = None
@@ -181,7 +157,9 @@ class SimpleMDMConnector:
     def paginate(self, url: OptionalString = None, starting_after: int = 0, limit: int = 100,
                  has_more: bool = True, **kwargs) -> RequiredDict:
         """Paginate over results.
-        :param url: URL to paginate
+
+        :param url: optional URL string, anything provided in this param will be automatically joined to the
+                    class attribute 'base_url'
         :param starting_after: record to start indexing/paginating from
         :param limit: maximum number of objects to send per pagination request"""
         result: OptionalDict = {"has_more": has_more, "data": list()}
@@ -203,14 +181,19 @@ class SimpleMDMConnector:
         return result
 
     def kwargs2params(self, func: Function, vals: RequiredDict, ignored_locals: ListString) -> RequiredDict:
-        """Convert optional arguments in implemented API methods to dictionary values
-        usable in the 'params' argument for various 'requests' HTTP methods. Ignores any keys that have the same
-        name as any of the 'VALID_FILE_KEYS' as these are passed to underlying 'requests' HTTP methods using the
-        'files' param for each relevant HTTP method.
+        """Converts optional arguments from internal model methods into parameters that can be sent via each REST
+        HTTP call. The argument names must match the parameters that are used in each respective SimpleMDM API method.
+
+        Certain arguments/parameters are ignored if they're in the 'VALID_FILE_KEYS' as they're passed to the underlyng
+        'requests' HTTP methods that accept the 'files' parameter (i.e. PUT/POST type requests).
+
         :param func: function to inspect
         :param vals: the values within the function, this is provided by calling 'locals()'
         :param ignored_locals: a list of strings of any local names to ignore, typically
                                this will be any required positionals passed to the function"""
+        ignored_locals = set(ignored_locals)
+        ignored_locals.add("params")
         signature = inspect.signature(func)
+
         return {p.name: vals.get(p.name) for p in signature.parameters
                 if p not in ignored_locals and vals.get(p.name) and vals.get(p.name) not in VALID_FILE_KEYS}

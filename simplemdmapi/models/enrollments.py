@@ -1,17 +1,20 @@
-from .connector import SimpleMDMConnector
-from .typehints import OptionalDict, UnionIntString
+from ..api import SimpleMDMConnector
+from ..typehints import OptionalDict, UnionIntString
 from typing import Any
 
 
 class Enrollments(SimpleMDMConnector):
-    """Simple MDM Enrollments.
-    https://simplemdm.com/docs/api/#enrollments"""
+    """Enrollments.
+
+    SimpleMDM API Documentation: https://simplemdm.com/docs/api/#enrollments
+    """
     def __init__(self, endpoint: str = "enrollments") -> None:
         self.endpoint = endpoint
         super().__init__()
 
     def delete(self, enrollment_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Delete an enrollment.
+
         :param enrollment_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -19,12 +22,14 @@ class Enrollments(SimpleMDMConnector):
 
     def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
         """List all enrollments.
+
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.paginate(params=params, **kwargs)  # Return list of enrollment objects
 
     def show(self, enrollment_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Show details of an enrollment.
+
         :param enrollment_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -32,7 +37,9 @@ class Enrollments(SimpleMDMConnector):
 
     def send_invitation(self, enrollment_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
         """Send an enrollment invitation to an email address or phone number.
+
         Note, the phone number must be prefixed with a '+' if it is an international phone number.
+
         :param enrollment_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
