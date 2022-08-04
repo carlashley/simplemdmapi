@@ -28,6 +28,11 @@ except ImportError:
 # - check if the 'required_params' and 'validate_params' in 'validators' is required
 # - move items in 'validators' into 'utils'
 
+HTTP_TIMEOUTS: TupleInt = (5, 15)
+HTTP_MAX_RETRIES: int = 3
+HTTP_RETRY_BACKOFF: int = 1
+HTTP_RETRY_STATUSES: ListInt = [429, 500, 502, 503, 504]
+
 
 class SimpleMDMConnector:
     """Simple MDM API Connector
@@ -41,12 +46,13 @@ class SimpleMDMConnector:
     :param retry_backoff: number of seconds between each retry, increases
                           exponentially based on this value.
     :param http_retry_statuses: list of HTTP status codes to retry on."""
-    def __init__(self, token: UnionStringPath = getenv("SIMPLETOKEN"),
+    def __init__(self,
+                 token: UnionStringPath = getenv("SIMPLETOKEN"),
                  base_url: str = "https://a.simplemdm.com/api/v1",
-                 timeout: TupleInt = (5, 15),
-                 max_retry: int = 3,
-                 retry_backoff: int = 1,
-                 http_status_retries: ListInt = [429, 500, 502, 503, 504],) -> None:
+                 timeout: TupleInt = HTTP_TIMEOUTS,
+                 max_retry: int = HTTP_MAX_RETRIES,
+                 retry_backoff: int = HTTP_RETRY_BACKOFF,
+                 http_status_retries: ListInt = HTTP_RETRY_STATUSES) -> None:
         self._token = read_token(token)
         self.base_url = base_url
         self.timeout = timeout

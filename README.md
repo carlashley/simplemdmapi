@@ -1,12 +1,12 @@
 # simplemdmapi
-A Python implementation of the SimpleMDM API
+A Python implementation of the SimpleMDM API. This is a work in progress and is not meant for production use at this time.
 
 # Requires
 ### Python:
 Tested on Python 3.10.4, but should only require Python 3.9+
 
 ### Packages:
-Requires the `requests` package, v2.27.1.
+Requires the `requests` package, >= v2.27.1.
 
 
 # Usage
