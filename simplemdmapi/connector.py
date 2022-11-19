@@ -1,0 +1,268 @@
+import inspect
+import requests
+
+from dataclasses import dataclass, field
+from os import getenv
+from pathlib import Path
+from requests.adapters import HTTPAdapter, Retry
+from time import sleep
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+
+@dataclass
+class SessionMethodArguments:
+    """Simple dataclass for arguments to use in 'requests.Session.method()' calls."""
+    url: Optional[str] = field(default=None)
+    ignore_statuses: Optional[List[str]] = field(default=None)
+    retry_statuses: Optional[List[str]] = field(default=None)
+    kwargs: Optional[Dict[Any, Any]] = field(default=None)
+
+
+class SimpleMDMConnector:
+    """SimpleMDM API Connector Class. Parent class for API endpoint calls."""
+    BASE_URI = "https://a.simplemdm.com/api"
+    HTTP_CONNECT_TIMEOUT: int = getenv("SIMPLEMDM_CONNECT_TIMEOUT") or 5
+    HTTP_MAX_RETRIES: int = getenv("SIMPLEMDM_MAX_RETRIES") or 3
+    HTTP_PAGINATE_MAX_RESULTS: int = getenv("SIMPLEMDM_RESULTS_PAGINATION") or 200
+    HTTP_READ_TIMEOUT: int = getenv("SIMPLEMDM_READ_TIMEOUT") or 15
+    HTTP_RETRY_BACKOFF: int = getenv("SIMPLEMDM_RETRY_BACKOFF") or 1
+    HTTP_RETRY_STATUS_LIST: List[int] = [429, 500, 502, 503, 504]
+    HTTP_SLEEP_WAIT: float = getenv("SIMPLEMDM_SLEEP_WAIT") or 1.0
+    VALID_FILE_KEYS = ["binary", "file", "mobileconfig"]
+    VALID_FILE_EXTS = [".mobileconfig", ".pkg", ".plist", ".txt"]
+
+    TOKEN: Union[Path, str] = getenv("SIMPLEMDM_TOKEN") or Path("/var/root/simplemdm_token")
+    RETRY: Retry = Retry(total=int(HTTP_MAX_RETRIES),
+                         status_forcelist=HTTP_RETRY_STATUS_LIST,
+                         backoff_factor=int(HTTP_RETRY_BACKOFF))
+
+    def __init__(self,
+                 version: str = "v1",
+                 proxies: Optional[Dict[str, str]] = None) -> None:
+        """Initialise the class with some core attributes.
+
+        :param version: the API version string to use, default is 'v1'; this forms part of the full API url
+        :param proxies: dictionary of proxy information to pass on to the session initialisation"""
+        self.version = version
+        self.session = self._initialise_session(proxies=proxies)
+        self.attempt = 0  # internally track the attempts made
+
+    def _clean_kwargs(self, kwargs: Dict[Any, Any]) -> Dict[Any, Any]:
+        """Cleans a dictionary of 'keyword' arguments by removing keys that are not part of the standard
+        'requests.request' API parameters."""
+        keep_args = ["method",
+                     "url",
+                     "params",
+                     "data",
+                     "headers",
+                     "cookies",
+                     "files",
+                     "auth",
+                     "timeout",
+                     "allow_redirects",
+                     "proxies",
+                     "hooks",
+                     "stream",
+                     "verify",
+                     "cert",
+                     "json"]
+
+        for k, _ in kwargs.copy().items():
+            if k not in keep_args:
+                try:
+                    del kwargs[k]
+                except KeyError:
+                    pass
+
+        return kwargs
+
+    def _initialise_session(self,
+                            adapter_protocols: List[str] = ["https://"],
+                            proxies: Optional[Dict[str, str]] = None) -> requests.Session:
+        """Initialise an instance of the 'requests.Session'.
+
+        :param adapter_protocols: list of protocols (as str) to mount the HTTPAdapter to
+        :param proxies: dictionary of proxy information to apply to the session instance"""
+        s = requests.Session()
+
+        if proxies:
+            s.proxies.update(proxies)
+
+        # Mount the HTTP adapter for handling retries, etc
+        for protocol in adapter_protocols:
+            s.session.mount(protocol, HTTPAdapter(max_retries=self.RETRY))
+
+        # Authorise
+        self.session.auth = requests.auth.HTTPBasicAuth(self._read_token(self.TOKEN))
+
+        return s
+
+    def _k2p(self, func: Callable, vals: Dict[Any, Any], ignored_locals: List[str]) -> Dict[Any, Any]:
+        """Converts optional arguments from internal model methods into parameters that can be sent via each REST
+        HTTP call. The argument names must match the parameters that are used in each respective SimpleMDM API method.
+
+        Certain arguments/parameters are ignored if they're in the 'VALID_FILE_KEYS' as they're passed to the underlyng
+        'requests' HTTP methods that accept the 'files' parameter (i.e. PUT/POST type requests).
+
+        :param func: function to inspect
+        :param vals: the values within the function, this is provided by calling 'locals()'
+        :param ignored_locals: a list of strings of any local names to ignore, typically
+                               this will be any required positionals passed to the function"""
+        ignored_locals = set(ignored_locals)
+        ignored_locals.add("params")
+        signature = inspect.signature(func)
+
+        return {p.name: vals.get(p.name) for p in signature.parameters
+                if p not in ignored_locals and vals.get(p.name) and vals.get(p.name) not in self.VALID_FILE_KEYS}
+
+    def _prepare_args(self, url: Optional[str] = None, **kwargs) -> Tuple[Any, ...]:
+        """Creates a full URL string from the provided URL and the API URL path and cleans up keyword arguments for
+        use in any 'requests.Session.method()' call.
+
+        Returns a dataclass object with all the various cleaned up arguments.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        url = self._urljoin(self.BASE_URL, self.endpoint, url)
+        i_s = kwargs.get("ignore_statuses", list())
+        r_s = kwargs.get("retry_statuses", self.HTTP_RETRY_STATUSES)
+        kwargs["timeout"] = kwargs.get("timeout", self.HTTP_CONNECT_TIMEOUT)
+        kwargs = self._clean_kwargs(kwargs)
+
+        return SessionMethodArguments(url=url, ignore_statuses=i_s, retry_statuses=r_s, kwargs=kwargs)
+
+    def _read_token(self, t: Union[Path, str]) -> Optional[str]:
+        """Pass in the token for authentication purposes. If the token string is a file path, read the file and
+        return the token contents as a string.
+
+        When the token is stored as a file, the token must be stored in the file without any new line/carriage returns.
+        Note: When storing the token as a file, please ensure the permissions of the file are such that it can only
+              be read by the user/group of the account that this API tool runs as.
+
+        :param t: the token as a string, or as a file path (as a string)"""
+        fp = Path(t)
+
+        if fp.is_file() and fp.exists():
+            with fp.open("r") as f:
+                return "".join(f.readlines()).strip()
+        else:
+            return t
+
+    def _session_method(self, method: str, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
+        """Performs the specified method action using the constructed session.
+
+        :param method: valid HTTP method; for example:  'DELETE', 'GET', 'PATCH', 'POST', 'PUT'.
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        wait = float(self.HTTP_SLEEP_WAIT)
+
+        # To avoid hitting any API rate limiting issues, sleep between each API call
+        if wait and wait > 0.0:
+            sleep(wait)
+
+        method = method.upper()  # Just in case.
+        upload_key = None
+        req = None
+
+        if method in ["POST", "PUT"] and kwargs.get("files"):  # Handle methods that can post/put files
+            upload_key = kwargs.get("upload_key")
+
+        args = self._prepare_args(url=url)  # Prepare the arguments _after_ nabbing any custom keyword args
+
+        if method in ["POST", "PUT"] and kwargs.get("files"):  # Performing an upload, so handle this specifically
+            fp = Path(args.kwargs["files"][upload_key])
+
+            with fp.open("rb") as f:
+                args.kwargs["files"][upload_key] = f
+                req = self.session.method(url, **args.kwargs)
+        else:
+            req = self.session.method(url, **args.kwargs)
+
+        # Retry
+        if req.status_code in args.retry_statuses:
+            sleep(wait)
+
+            if self.attempt < self.HTTP_MAX_RETRIES:
+                self._session_method(method=method, url=url, kwargs=kwargs)
+                self.attempt += 1
+        else:
+            self.attempt = 0  # ensure reset attempt count occurs on success
+
+        # Raise exceptions if necessary, ignores any status codes that are safe to ignore,
+        # as some of the API methods return status codes that would technically be considered
+        # 'bad' but are just a way of flagging that action was or was not taken.
+        if req.status_code not in args.ignore_statuses:
+            req.raise_for_status()
+
+        return req
+
+    def _urljoin(self, *args) -> str:
+        """Returns the input list of 'arguments' as a URL string."""
+        return "/".join([x.strip("/") for x in args if x])
+
+    # Public methods
+    def delete(self, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
+        """Executes the HTTP 'DELETE' method.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        return self._session_method(method="DELETE", url=url, **kwargs)
+
+    def get(self, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
+        """Executes the HTTP 'GET' method.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        return self._session_method(method="GET", url=url, **kwargs)
+
+    def patch(self, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
+        """Executes the HTTP 'PATCH' method.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        return self._session_method(method="PATCH", url=url, **kwargs)
+
+    def post(self, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
+        """Executes the HTTP 'POST' method.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        return self._session_method(method="POST", url=url, **kwargs)
+
+    def put(self, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
+        """Executes the HTTP 'PUT' method.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
+        return self._session_method(method="PUT", url=url, **kwargs)
+
+    def paginate(self,
+                 url: Optional[str] = None,
+                 start: int = 0,
+                 limit: int = 200,
+                 has_more: bool = True,
+                 **kwargs) -> Optional[Dict[Any, Any]]:
+        """Paginate results for API endpoint methods that require pagination.
+
+        :param url: optional URL string, do not provide the full URL, only provide the components after the
+                    specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'
+        :param start: record to start pagination from
+        :param limit: maximum number of results per pagination request
+        :param has_more: boolean value to indicate if pagination should continue or not, initially defaults
+                         to True, but will flipped to False by this method as required to stop paginating"""
+        result = {"has_more": has_more, "data": list()}
+        paginate_params = {"starting_after": start, "limit": limit}  # add these args to 'kwargs'
+
+        try:
+            kwargs["params"].update(paginate_params)
+        except KeyError:
+            kwargs["params"] = paginate_params
+
+        while has_more:
+            req = self._session_method(method="GET", url=url, **kwargs)  # initial request
+            response = req.json()  # the JSON response data
+            result["data"].extend(response.get("data", list()))  # extend the result list with the new data
+            kwargs["params"]["starting_after"] = response["data"][-1].get("id")  # get the last device ID
+            result["has_more"] = response.get("has_more", False)  # is there more data to come
+
+        return result
