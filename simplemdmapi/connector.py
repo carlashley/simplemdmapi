@@ -1,7 +1,6 @@
 import inspect
 import requests
 
-from dataclasses import dataclass, field
 from os import getenv
 from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
@@ -9,18 +8,9 @@ from time import sleep
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
-@dataclass
-class SessionMethodArguments:
-    """Simple dataclass for arguments to use in 'requests.Session.method()' calls."""
-    url: Optional[str] = field(default=None)
-    ignore_statuses: Optional[List[str]] = field(default=None)
-    retry_statuses: Optional[List[str]] = field(default=None)
-    kwargs: Optional[Dict[Any, Any]] = field(default=None)
-
-
 class SimpleMDMConnector:
     """SimpleMDM API Connector Class. Parent class for API endpoint calls."""
-    BASE_URI = "https://a.simplemdm.com/api"
+    BASE_URL = "https://a.simplemdm.com/api"
     HTTP_CONNECT_TIMEOUT: int = getenv("SIMPLEMDM_CONNECT_TIMEOUT") or 5
     HTTP_MAX_RETRIES: int = getenv("SIMPLEMDM_MAX_RETRIES") or 3
     HTTP_PAGINATE_MAX_RESULTS: int = getenv("SIMPLEMDM_RESULTS_PAGINATION") or 200
@@ -93,11 +83,15 @@ class SimpleMDMConnector:
             s.mount(protocol, HTTPAdapter(max_retries=self.RETRY))
 
         # Authorise
-        s.auth = requests.auth.HTTPBasicAuth(self._read_token(self.TOKEN))
+        s.auth = requests.auth.HTTPBasicAuth(self._read_token(self.TOKEN), '')
 
         return s
 
-    def _k2p(self, func: Callable, vals: Dict[Any, Any], ignored_locals: List[str]) -> Dict[Any, Any]:
+    def _k2p(self,
+             func: Callable,
+             vals: Dict[Any, Any],
+             ignored_locals: List[str],
+             rename_keys: Optional[Dict[Any, Any]] = dict()) -> Dict[Any, Any]:
         """Converts optional arguments from internal model methods into parameters that can be sent via each REST
         HTTP call. The argument names must match the parameters that are used in each respective SimpleMDM API method.
 
@@ -107,13 +101,27 @@ class SimpleMDMConnector:
         :param func: function to inspect
         :param vals: the values within the function, this is provided by calling 'locals()'
         :param ignored_locals: a list of strings of any local names to ignore, typically
-                               this will be any required positionals passed to the function"""
+                               this will be any required positionals passed to the function
+        :param rename_keys: a dictionary 'key: value' that indicates a param passed in by an internal method must
+                            be renamed to the correct key, for example, if a param name clashes with a reserved Python
+                            word/type, such as: '{'fmt': 'format'}' would rename 'fmt' to the API param 'format' which
+                            is a reserved word in Python"""
         ignored_locals = set(ignored_locals)
         ignored_locals.add("params")
         signature = inspect.signature(func)
+        result = dict()
 
-        return {p.name: vals.get(p.name) for p in signature.parameters
-                if p not in ignored_locals and vals.get(p.name) and vals.get(p.name) not in self.VALID_FILE_KEYS}
+        for param in signature.parameters:
+            name = rename_keys.get(param, param)  # default to original param name if not in 'rename_keys'
+            value = vals.get(name)
+
+            if value and param not in ignored_locals:  # check original param name is not in 'ignored_locals'
+                result[name] = value
+
+        return result
+
+        # return {p.name: vals.get(p.name) for p in signature.parameters
+        #         if p not in ignored_locals and vals.get(p.name) and vals.get(p.name) not in self.VALID_FILE_KEYS}
 
     def _prepare_args(self, url: Optional[str] = None, **kwargs) -> Tuple[Any, ...]:
         """Creates a full URL string from the provided URL and the API URL path and cleans up keyword arguments for
@@ -123,13 +131,13 @@ class SimpleMDMConnector:
 
         :param url: optional URL string, do not provide the full URL, only provide the components after the
                     specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
-        url = self._urljoin(self.BASE_URL, self.endpoint, url)
+        url = self._urljoin(self.BASE_URL, self.version, self.endpoint, url)
         i_s = kwargs.get("ignore_statuses", list())
-        r_s = kwargs.get("retry_statuses", self.HTTP_RETRY_STATUSES)
+        r_s = kwargs.get("retry_statuses", self.HTTP_RETRY_STATUS_LIST)
         kwargs["timeout"] = kwargs.get("timeout", self.HTTP_CONNECT_TIMEOUT)
         kwargs = self._clean_kwargs(kwargs)
 
-        return SessionMethodArguments(url=url, ignore_statuses=i_s, retry_statuses=r_s, kwargs=kwargs)
+        return (url, i_s, r_s, kwargs)
 
     def _read_token(self, t: Path | str) -> Optional[str]:
         """Pass in the token for authentication purposes. If the token string is a file path, read the file and
@@ -154,32 +162,26 @@ class SimpleMDMConnector:
         :param method: valid HTTP method; for example:  'DELETE', 'GET', 'PATCH', 'POST', 'PUT'.
         :param url: optional URL string, do not provide the full URL, only provide the components after the
                     specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
-        wait = float(self.HTTP_SLEEP_WAIT)
-
-        # To avoid hitting any API rate limiting issues, sleep between each API call
-        if wait and wait > 0.0:
-            sleep(wait)
-
         method = method.upper()  # Just in case.
         upload_key = None
-        req = None
 
         if method in ["POST", "PUT"] and kwargs.get("files"):  # Handle methods that can post/put files
             upload_key = kwargs.get("upload_key")
 
-        args = self._prepare_args(url=url)  # Prepare the arguments _after_ nabbing any custom keyword args
+        url, ignore_statuses, retry_statuses, kwargs = self._prepare_args(url=url, **kwargs)
 
         if method in ["POST", "PUT"] and kwargs.get("files"):  # Performing an upload, so handle this specifically
-            fp = Path(args.kwargs["files"][upload_key])
+            fp = Path(kwargs["files"][upload_key])
 
             with fp.open("rb") as f:
-                args.kwargs["files"][upload_key] = f
-                req = self.session.method(url, **args.kwargs)
+                kwargs["files"][upload_key] = f
+                req = self.session.request(method=method, url=url, **kwargs)
         else:
-            req = self.session.method(url, **args.kwargs)
+            req = self.session.request(method=method, url=url, **kwargs)
 
         # Retry
-        if req.status_code in args.retry_statuses:
+        if req.status_code in retry_statuses:
+            wait = float(self.HTTP_SLEEP_WAIT)
             sleep(wait)
 
             if self.attempt < self.HTTP_MAX_RETRIES:
@@ -191,7 +193,7 @@ class SimpleMDMConnector:
         # Raise exceptions if necessary, ignores any status codes that are safe to ignore,
         # as some of the API methods return status codes that would technically be considered
         # 'bad' but are just a way of flagging that action was or was not taken.
-        if req.status_code not in args.ignore_statuses:
+        if req.status_code not in ignore_statuses:
             req.raise_for_status()
 
         return req
@@ -239,7 +241,7 @@ class SimpleMDMConnector:
     def paginate(self,
                  url: Optional[str] = None,
                  start: int = 0,
-                 limit: int = 200,
+                 limit: int = 100,
                  has_more: bool = True,
                  **kwargs) -> Optional[Dict[Any, Any]]:
         """Paginate results for API endpoint methods that require pagination.
@@ -251,18 +253,20 @@ class SimpleMDMConnector:
         :param has_more: boolean value to indicate if pagination should continue or not, initially defaults
                          to True, but will flipped to False by this method as required to stop paginating"""
         result = {"has_more": has_more, "data": list()}
-        paginate_params = {"starting_after": start, "limit": limit}  # add these args to 'kwargs'
+        paginate_params = {"starting_after": start, "limit": limit}
+        print(kwargs)
 
-        try:
+        if kwargs.get("params"):
             kwargs["params"].update(paginate_params)
-        except KeyError:
+        else:
             kwargs["params"] = paginate_params
 
         while has_more:
-            req = self._session_method(method="GET", url=url, **kwargs)  # initial request
-            response = req.json()  # the JSON response data
-            result["data"].extend(response.get("data", list()))  # extend the result list with the new data
-            kwargs["params"]["starting_after"] = response["data"][-1].get("id")  # get the last device ID
-            result["has_more"] = response.get("has_more", False)  # is there more data to come
+            req = self.get(url=url, **kwargs)
+            response = req.json()
+            result["data"].extend(response.get("data", list()))
+            kwargs["params"]["starting_after"] = response["data"][-1].get("id")
+            has_more = response.get("has_more", False)
+            result["has_more"] = has_more
 
         return result
