@@ -90,10 +90,10 @@ class SimpleMDMConnector:
 
         # Mount the HTTP adapter for handling retries, etc
         for protocol in adapter_protocols:
-            s.session.mount(protocol, HTTPAdapter(max_retries=self.RETRY))
+            s.mount(protocol, HTTPAdapter(max_retries=self.RETRY))
 
         # Authorise
-        self.session.auth = requests.auth.HTTPBasicAuth(self._read_token(self.TOKEN))
+        s.auth = requests.auth.HTTPBasicAuth(self._read_token(self.TOKEN))
 
         return s
 
