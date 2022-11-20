@@ -1,6 +1,5 @@
-from ..api import SimpleMDMConnector
-from ..typehints import OptionalDict, UnionIntString
-from typing import Any
+from ..connector import SimpleMDMConnector
+from typing import Any, Dict, Optional
 
 
 class InstalledApps(SimpleMDMConnector):
@@ -14,7 +13,7 @@ class InstalledApps(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def retrieve(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def retrieve(self, app_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Show details of an installed app.
 
         :param app_id: the id value.
@@ -22,27 +21,25 @@ class InstalledApps(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.get(url=f"{app_id}", params=params, **kwargs)  # Return an installed app object
 
-    def request_management(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def request_management(self, app_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Request management of an unmanaged app installed on a device.
 
         :param app_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{app_id}/request_management"
-
         return self.post(url=url, params=params, **kwargs)  # Return 202 status
 
-    def install_update(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def install_update(self, app_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Install app update for an installed app on devices assigned the app.
 
         :param app_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{app_id}/update"
-
         return self.post(url=url, params=params, **kwargs)  # Return 202 status
 
-    def uninstall(self, app_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def uninstall(self, app_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Uninstall an installed app.
 
         :param app_id: the id value.

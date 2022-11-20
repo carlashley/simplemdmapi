@@ -1,6 +1,5 @@
-from ..api import SimpleMDMConnector
-from ..typehints import OptionalString
-from typing import Any
+from ..connector import SimpleMDMConnector
+from typing import Any, Optional
 
 
 class Account(SimpleMDMConnector):
@@ -12,19 +11,16 @@ class Account(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def show(self) -> Any:
+    def show(self, **kwargs) -> Any:
         """Retrieve information about your account.
 
-        Subscription information is only available for accounts on a manual billing plan.
+        Subscription information is only available for accounts on a manual billing plan."""
+        return self.get(**kwargs).json()  # Return json content of account info
 
-        :param params: specific parameters to provide to the API query.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get().json()  # Return json content of account info
-
-    def update(self, name: OptionalString = None, country_code: OptionalString = None) -> Any:
+    def update(self, name: Optional[str] = None, country_code: Optional[str] = None, **kwargs) -> Any:
         """Update details about the account.
 
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        params = self.kwargs2params(self.update, locals(), ["params"])
-        return self.patch(params=params).json()  # Return json content of updated account info
+        params = self._k2p(self.update, locals(), ["params"])
+        return self.patch(params=params, **kwargs).json()  # Return json content of updated account info

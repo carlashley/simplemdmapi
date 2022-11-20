@@ -1,6 +1,5 @@
-from ..api import SimpleMDMConnector
-from ..typehints import OptionalDict, UnionIntString
-from typing import Any
+from ..connector import SimpleMDMConnector
+from typing import Any, Dict, Optional
 
 
 class DEPServers(SimpleMDMConnector):
@@ -12,14 +11,14 @@ class DEPServers(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def list_all(self, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """List all DEP Servers.
 
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.paginate(params=params, **kwargs)  # Return list of server objects
 
-    def list_devices(self, server_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def list_devices(self, server_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """List all devices for the supplied DEP server.
 
         :param server_id: the id value.
@@ -29,7 +28,7 @@ class DEPServers(SimpleMDMConnector):
 
         return self.paginate(url=url, params=params, **kwargs)  # Return list of device objects
 
-    def retrieve(self, server_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def retrieve(self, server_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Retrieve information about a dep_server.
 
         :param server_id: the id value.
@@ -37,18 +36,21 @@ class DEPServers(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.get(url=f"{server_id}", params=params, **kwargs)  # Return server object
 
-    def retrieve_device(self, server_id: UnionIntString, device_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def retrieve_device(self,
+                        server_id: int | str,
+                        device_id: int | str,
+                        params: Optional[Dict[Any, Any]] = dict(),
+                        **kwargs) -> Any:
         """Retrieve DEP device.
 
         :param server_id: the id value.
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["include_awaiting_enrollment", "search"]
         url = f"{server_id}/dep_devices/{device_id}"
 
         return self.get(url=url, params=params, **kwargs)  # Return device object
 
-    def sync(self, server_id: UnionIntString, params: OptionalDict = dict(), **kwargs) -> Any:
+    def sync(self, server_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Sync DEP server with Apple.
 
         :param server_id: the id value.
@@ -68,7 +70,7 @@ class PushCertificates(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def get_csr(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def get_csr(self, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Generate a signed CSR for the Apply Push Certificates portal.
 
         The certificate is returned in the 'data' key, and can be uploaded as is.
@@ -77,19 +79,20 @@ class PushCertificates(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.get(url="scsr", params=params, **kwargs).json()
 
-    def show(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def show(self, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """Show details of the current push certificate.
 
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.get(params=params, **kwargs).json()  # Return push certificate details object
 
-    def update(self, params: OptionalDict = dict(), files: OptionalDict = dict(), **kwargs) -> Any:
+    def update(self,
+               params: Optional[Dict[Any, Any]] = dict(),
+               files: Optional[Dict[Any, Any]] = dict(),
+               **kwargs) -> Any:
         """Upload a new certificate (replaces the existing certificate).
 
         :param params: specific parameters to provide to the API query.
         :param files: specific files to upload; example: {"binary": "/tmp/updatedpackage.pkg"}
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        kwargs["validate_params"] = ["apple_id"]
-
         return self.put(params=params, files=files, **kwargs).json()  # Return certificate details object

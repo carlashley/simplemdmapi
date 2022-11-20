@@ -6,7 +6,7 @@ from os import getenv
 from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -31,7 +31,7 @@ class SimpleMDMConnector:
     VALID_FILE_KEYS = ["binary", "file", "mobileconfig"]
     VALID_FILE_EXTS = [".mobileconfig", ".pkg", ".plist", ".txt"]
 
-    TOKEN: Union[Path, str] = getenv("SIMPLEMDM_TOKEN") or Path("/var/root/simplemdm_token")
+    TOKEN: Path | str = getenv("SIMPLEMDM_TOKEN") or Path("/var/root/simplemdm_token")
     RETRY: Retry = Retry(total=int(HTTP_MAX_RETRIES),
                          status_forcelist=HTTP_RETRY_STATUS_LIST,
                          backoff_factor=int(HTTP_RETRY_BACKOFF))
@@ -131,7 +131,7 @@ class SimpleMDMConnector:
 
         return SessionMethodArguments(url=url, ignore_statuses=i_s, retry_statuses=r_s, kwargs=kwargs)
 
-    def _read_token(self, t: Union[Path, str]) -> Optional[str]:
+    def _read_token(self, t: Path | str) -> Optional[str]:
         """Pass in the token for authentication purposes. If the token string is a file path, read the file and
         return the token contents as a string.
 

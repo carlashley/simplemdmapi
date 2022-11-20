@@ -1,6 +1,5 @@
-from ..api import SimpleMDMConnector
-from ..typehints import OptionalDict
-from typing import Any
+from ..connector import SimpleMDMConnector
+from typing import Any, Dict, Optional
 
 
 class Logs(SimpleMDMConnector):
@@ -11,7 +10,7 @@ class Logs(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def list_all(self, params: OptionalDict = dict(), **kwargs) -> Any:
+    def list_all(self, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
         """View logged events for device and admin interactions.
 
         :param params: specific parameters to provide to the API query.
