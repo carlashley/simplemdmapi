@@ -254,7 +254,6 @@ class SimpleMDMConnector:
                          to True, but will flipped to False by this method as required to stop paginating"""
         result = {"has_more": has_more, "data": list()}
         paginate_params = {"starting_after": start, "limit": limit}
-        print(kwargs)
 
         if kwargs.get("params"):
             kwargs["params"].update(paginate_params)
