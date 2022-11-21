@@ -1,5 +1,5 @@
 from ..connector import SimpleMDMConnector
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class Apps(SimpleMDMConnector):
@@ -26,7 +26,7 @@ class Apps(SimpleMDMConnector):
         :param binary: file path (as a string) to the app to upload, can only upload '.pkg' files
         :param name: the name to use when uploading a binary"""
         files = {"binary": binary} if binary else dict()
-        params = self._k2p(self.create, locals(), ["files"])
+        params = self._k2p(self.create, vals=locals(), ignored_locals=["files"])
         return self.post(params=params, files=files, upload_key="binary", **kwargs).json()  # Return created app object
 
     def delete_app(self, app_id: int | str, **kwargs) -> Any:
@@ -63,7 +63,7 @@ class Apps(SimpleMDMConnector):
         :param binary: file path (as a string) to the app to upload, can only upload '.pkg' files
         :param name: the name to use when uploading a binary"""
         files = {"binary": binary} if binary else dict()
-        params = self._k2p(self.update, locals(), ["app_id", "files"])
+        params = self._k2p(self.update, vals=locals(), ignored_locals=["app_id", "files"])
         # Return app update object
         return self.patch(url=f"{app_id}", params=params, files=files, upload_key="binary", **kwargs).json()
 
@@ -86,29 +86,28 @@ class ManagedAppConfigs(SimpleMDMConnector):
     def create(self,
                app_id: int | str,
                key: str,
-               value: Optional[str] = None,
-               value_type: Optional[str] = None,
+               value: str,
+               value_type: str,
                **kwargs) -> Any:
         """Create a managed app config.
 
         :param key: the key name.
         :param value: default value the key will have
         :param value_type: the type the value is expected to be"""
-        params = self._k2p(self.create, locals(), ["app_id"])
+        params = self._k2p(self.create, vals=locals(), ignored_locals=["app_id"])
         return self.post(url=f"{app_id}/managed_configs", params=params, **kwargs).json()  # Return created app object
 
     def delete_config(self,
                       app_id: int | str,
                       config_id: int | str,
-                      params: Optional[Dict[Any, Any]] = dict(),
                       **kwargs) -> Any:
         """Delete a managed config for an app.
 
         :param app_id: the id value
-        :praam config_id: the id value"""
+        :param config_id: the id value"""
         return self.delete(url=f"{app_id}/managed_configs/{config_id}", **kwargs)  # Return 204 status
 
-    def push_updates(self, app_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
+    def push_updates(self, app_id: int | str, **kwargs) -> Any:
         """Push a managed config for an app to all devices with that app. Only required for changes
         made to a managed app config via API.
 

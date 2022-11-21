@@ -46,6 +46,6 @@ class DeviceGroups(SimpleMDMConnector):
         :param grp_id: the id value
         :param attr_name: the name of the custom attribute to set the attribute value of
         :param attr_value: the value to set"""
-        params = self._k2p(self.set_attribute, locals(), ["grp_id", "attr_name"])
+        params = self._k2p(self.set_attribute, vals=locals(), ignored_locals=["grp_id", "attr_name"])
         # Return JSON content of the updated value
         return self.put(url=f"{grp_id}/custom_attribute_values/{attr_name}", params=params, **kwargs).json()

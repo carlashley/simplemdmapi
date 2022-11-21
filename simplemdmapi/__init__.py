@@ -7,7 +7,7 @@ from .models.devices import ManagedDevices
 from .models.enrollments import Enrollments
 from .models.installed_apps import InstalledApps
 from .models.logs import Logs
-from .models.profiles import CustomConfigProfiles
+from .models.profiles import CustomConfigProfiles, Profiles
 from .models.servers import DEPServers, PushCertificates
 
 account = Account()
@@ -20,6 +20,7 @@ devices = ManagedDevices()
 enrollments = Enrollments()
 installed_apps = InstalledApps()
 logs = Logs()
-profiles = CustomConfigProfiles()
+custom_profiles = CustomConfigProfiles()
+profiles = Profiles()
 dep_servers = DEPServers()
 push_certifcatess = PushCertificates()

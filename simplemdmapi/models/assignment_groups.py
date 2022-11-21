@@ -59,7 +59,7 @@ class AssignmentGroups(SimpleMDMConnector):
         :param name: assignment group name
         :param auto_deploy: whether apps should be automatically pushed when devices join
                             this assignment group, default is True."""
-        params = self._k2p(self.create, locals(), ["name", "auto_deploy"])
+        params = self._k2p(self.create, vals=locals(), ignored_locals=["name", "auto_deploy"])
         return self.post(params=params, **kwargs)  # Return created assignment group object
 
     def delete_group(self, grp_id: int | str, **kwargs) -> Any:
@@ -84,7 +84,7 @@ class AssignmentGroups(SimpleMDMConnector):
         :param grp_id: the id value
         :param auto_deploy: whether apps should be automatically pushed when devices join
                             this assignment group, default is True."""
-        params = self._k2p(self.update, locals(), ["grp_id", "name", "auto_deploy"])
+        params = self._k2p(self.update, vals=locals(), ignored_locals=["grp_id", "name", "auto_deploy"])
         return self.patch(url=f"{grp_id}", params=params, **kwargs)  # Return 204 status
 
     def push_apps(self, grp_id: int | str, **kwargs) -> Any:

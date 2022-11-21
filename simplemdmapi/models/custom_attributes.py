@@ -16,7 +16,7 @@ class CustomAttributes(SimpleMDMConnector):
 
         :param name: name of the custom attribute
         :param default_value: the default value of the custom attribute"""
-        params = self._k2p(self.create, locals(), ["name", "default_value"])
+        params = self._k2p(self.create, vals=locals(), ignored_locals=["name", "default_value"])
         return self.post(params=params, **kwargs).json()  # Return custom attribute object
 
     def delete_attribute(self, attr_id: int | str, **kwargs) -> Any:
@@ -40,5 +40,5 @@ class CustomAttributes(SimpleMDMConnector):
 
         :param attr_id: the id value
         :param default_value: the updated default value"""
-        params = self._k2p(self.update, locals(), ["attr_id", "default_value"])
+        params = self._k2p(self.update, vals=locals(), ignored_locals=["attr_id", "default_value"])
         return self.patch(url=f"{attr_id}", params=params, **kwargs).json()  # Return ??

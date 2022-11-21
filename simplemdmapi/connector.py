@@ -185,7 +185,7 @@ class SimpleMDMConnector:
             sleep(wait)
 
             if self.attempt < self.HTTP_MAX_RETRIES:
-                self._session_method(method=method, url=url, kwargs=kwargs)
+                self._session_method(method=method, url=url, kwargs=kwargs)  # pass original values through
                 self.attempt += 1
         else:
             self.attempt = 0  # ensure reset attempt count occurs on success

@@ -16,108 +16,182 @@ class CustomConfigProfiles(SimpleMDMConnector):
     def assign_to_device_group(self,
                                profile_id: int | str,
                                device_grp_id: int | str,
-                               params: Optional[Dict[Any, Any]] = dict(),
                                **kwargs) -> Any:
         """Assign a custom configuration profile to a device group.
 
         :param profile_id: the id value.
         :param device_grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{profile_id}/device_groups/{device_grp_id}"
 
-        return self.post(url=url, params=params, **kwargs)  # Returns ??
+        return self.post(url=url, **kwargs)  # Returns ??
 
     def unassign_from_device_group(self,
                                    profile_id: int | str,
                                    device_grp_id: int | str,
-                                   params: Optional[Dict[Any, Any]] = dict(),
                                    **kwargs) -> Any:
         """Unassign a custom configuration profile from a device group.
 
         :param profile_id: the id value.
         :param device_grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{profile_id}/device_groups/{device_grp_id}"
 
-        return self.delete(url=url, params=params, **kwargs)  # Returns ??
+        return self.delete(url=url, **kwargs)  # Returns ??
 
     def assign_to_device(self,
                          profile_id: int | str,
                          grp_id: int | str,
-                         params: Optional[Dict[Any, Any]] = dict(),
                          **kwargs) -> Any:
         """Assign a custom configuration profile to a device group.
 
         :param profile_id: the id value.
         :param grp_id: the id value.
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{profile_id}/devices/{grp_id}"
 
-        return self.post(url=url, params=params, **kwargs)  # Returns ??
+        return self.post(url=url, **kwargs)  # Returns ??
 
     def unassign_from_device(self,
                              profile_id: int | str,
                              device_id: int | str,
-                             params: Optional[Dict[Any, Any]] = dict(),
                              **kwargs) -> Any:
         """Unassign a custom configuration profile from a device group.
 
         :param profile_id: the id value.
         :param device_id: the id value.
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{profile_id}/devices/{device_id}"
 
-        return self.delete(url=url, params=params, **kwargs)  # Returns ??
+        return self.delete(url=url, **kwargs)  # Returns ??
 
     def create(self,
-               params: Optional[Dict[Any, Any]] = dict(),
-               files: Optional[Dict[Any, Any]] = dict(),
+               name: str = None,
+               mobileconfig: str = None,
+               user_scope: Optional[bool] = False,
+               attribute_support: Optional[bool] = False,
                **kwargs) -> Any:
-        """Upload/create a custom configuration profile.
+        """Create a custom configuration profile.
 
-        :param params: specific parameters to provide to the API query.
-        :param files: file to upload.
+        :param name: the name of the profile
+        :param mobileconfig: the mobile config itself
+        :param user_scope: if False, deploy as a device profile instead of a user profile (True); default is False
+        :param attribute_support: enable attribute support in the uploaded profile (True); default is False
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.post(params=params, files=files, **kwargs)  # Returns ??
+        files = {"mobileconfig": mobileconfig}
+        params = self._k2p(self.update, vals=locals(), ignored_locals=["profile_id"])
+        return self.patch(files=files, params=params, **kwargs)  # Returns ??
 
-    def delete_profile(self, profile_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
+    def delete_profile(self, profile_id: int | str, **kwargs) -> Any:
         """Delete a custom configuration profile.
 
         :param profile_id: the id value.
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.delete(url=f"{profile_id}", params=params, **kwargs)  # Returns ??
+        return self.delete(url=f"{profile_id}", **kwargs)  # Returns ??
 
-    def list_all(self, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
+    def list_all(self, **kwargs) -> Any:
         """List all custom configuration profiles.
 
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.paginate(params=params, **kwargs)  # Returns a list of profile objects
+        return self.paginate(**kwargs)  # Returns a list of profile objects
 
-    def retrieve(self, profile_id: int | str, params: Optional[Dict[Any, Any]] = dict(), **kwargs) -> Any:
+    def retrieve(self, profile_id: int | str, **kwargs) -> Any:
         """Retrieve one custom configuration profile.
 
         :param profile_id: the id value.
-        :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{profile_id}/download"
 
-        return self.get(url=url, params=params, **kwargs)  # Returns ??
+        return self.get(url=url, **kwargs)  # Returns ??
 
     def update(self,
                profile_id: int | str,
-               params: Optional[Dict[Any, Any]] = dict(),
-               files: Optional[Dict[Any, Any]] = dict(),
+               name: Optional[str] = None,
+               mobileconfig: Optional[str] = None,
+               user_scope: Optional[bool] = False,
+               attribute_support: Optional[bool] = False,
                **kwargs) -> Any:
         """Update details about a custom configuration profile.
 
         :param profile_id: the id value.
-        :param params: specific parameters to provide to the API query.
-        :param files: file to upload.
+        :param name: update the name of the profile
+        :param mobileconfig: update the mobile config itself
+        :param user_scope: if False, deploy as a device profile instead of a user profile (True); default is False
+        :param attribute_support: enable attribute support in the uploaded profile (True); default is False
         :param kwargs: specific parameters to provide to the underlying requests function."""
+        files = {"mobileconfig": mobileconfig}
+        params = self._k2p(self.update, vals=locals(), ignored_locals=["profile_id"])
         return self.patch(url=f"{profile_id}", files=files, params=params, **kwargs)  # Returns ??
+
+
+class Profiles(SimpleMDMConnector):
+    """Profiles.
+    Note: These are the 'native' profiles created in the SimpleMDM management dashboard.
+
+    SimpleMDM API Documentation: https://simplemdm.com/docs/api/profiles
+    """
+    def __init__(self, endpoint: str = "profiles") -> None:
+        self.endpoint = endpoint
+        super().__init__()
+
+    # To be implemented:
+
+    def assign_to_device_group(self,
+                               profile_id: int | str,
+                               device_grp_id: int | str,
+                               **kwargs) -> Any:
+        """Assign a profile to a device group.
+
+        :param profile_id: the id value.
+        :param device_grp_id: the id value.
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        url = f"{profile_id}/device_groups/{device_grp_id}"
+
+        return self.post(url=url, **kwargs)  # Returns ??
+
+    def unassign_from_device_group(self,
+                                   profile_id: int | str,
+                                   device_grp_id: int | str,
+                                   **kwargs) -> Any:
+        """Unassign a profile from a device group.
+
+        :param profile_id: the id value.
+        :param device_grp_id: the id value.
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        url = f"{profile_id}/device_groups/{device_grp_id}"
+
+        return self.delete(url=url, **kwargs)  # Returns ??
+
+    def assign_to_device(self,
+                         profile_id: int | str,
+                         grp_id: int | str,
+                         **kwargs) -> Any:
+        """Assign a profile to a device group.
+
+        :param profile_id: the id value.
+        :param grp_id: the id value.
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        url = f"{profile_id}/devices/{grp_id}"
+
+        return self.post(url=url, **kwargs)  # Returns ??
+
+    def unassign_from_device(self,
+                             profile_id: int | str,
+                             device_id: int | str,
+                             **kwargs) -> Any:
+        """Unassign a profile from a device group.
+
+        :param profile_id: the id value.
+        :param device_id: the id value.
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        url = f"{profile_id}/devices/{device_id}"
+
+        return self.delete(url=url, **kwargs)  # Returns ??
+
+    def list_all(self, search: Optional[str] = None, **kwargs) -> Any:
+        """List all profiles.
+
+        :param search: optional string to search profiles by name/type
+        :param kwargs: specific parameters to provide to the underlying requests function."""
+        params = self._k2p(self.list_all, vals=locals(), ignored_locals=list())
+        return self.paginate(**kwargs)  # Returns a list of profile objects
