@@ -15,16 +15,14 @@ Set an environment variable `SIMPLETOKEN` to the file path of a plain text file 
 is the first line of the file (alternatively the token can be set as the value of the environment
 variable, but this is not recommended).
 
-### Proxies
-If you have special proxy settings that need to be passed in to `requests`, simpley create a file
-named `proxies.py` and create a variable `proxy_settings` with a dictionary containing the key value pairs of
-the proxy settings required.
-For example:
-```
-proxy_settings = {"http": "http://example.org",
-                  "https": "https://example.org}
-```
-This `proxies.py` file is not version controlled, so will not cause problems with git updates.
+### Environment Values
+- `SIMPLEMDM_CONNECT_TIMEOUT` number of seconds for connection timeout; defaults to `5`
+- `SIMPLEMDM_READ_TIMEOUT` number of seconds for read timeout; defaults to `15`
+- `SIMEMDM_MAX_RETRIES` maximum number of retries; defaults to `3`
+- `SIMPLEMDM_RETRY_BACKOFF` number of backoff seconds between each retry (this exponentially increases each retry); defaults to `1`
+- `SIMPLEMDM_RESULTS_PAGINATION` maxumum number of objects per "page" returned in a pagination request; defaults to `200`
+- `SIMPLEMDM_SLEEP_WAIT` number of seconds (int or float representation) to sleep between each request (to avoid API rate limiting); defaults to `1.0`
+- `SIMPLEMDM_TOKEN` actual token string for authentication or path to a plain text file containing the token string (on a single line); defaults to `/var/root/simplemdm_token`
 
 ### Package use
 ```
