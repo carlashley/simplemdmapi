@@ -1,5 +1,5 @@
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any
 
 
 class DeviceGroups(SimpleMDMConnector):
@@ -11,41 +11,40 @@ class DeviceGroups(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def assign_device(self, grp_id: int | str, device_id: int | str, **kwargs) -> Any:
+    def assign_device(self, grp_id: int | str, device_id: int | str, **kwargs) -> Response:
         """Assign a device to a device group.
 
         :param grp_id: the id value
         :param device_id: the id value"""
-        return self.post(url=f"{grp_id}/devices/{device_id}", **kwargs)  # Return 202 on success
+        return self.post(url=f"{grp_id}/devices/{device_id}", **kwargs)
 
-    def clone(self, grp_id: int | str, **kwargs) -> Any:
+    def clone(self, grp_id: int | str, **kwargs) -> Response:
         """Clone a device group.
 
         :param grp_id: the id value"""
-        return self.post(url=f"{grp_id}/clone", **kwargs).json()  # Return json content of new group
+        return self.post(url=f"{grp_id}/clone", **kwargs)
 
-    def list_all(self, **kwargs) -> Any:
+    def list_all(self, **kwargs) -> Response:
         """List all device groups."""
-        return self.paginate(**kwargs)  # Return list of group objects
+        return self.paginate(**kwargs)
 
-    def retrieve(self, grp_id: int | str, **kwargs) -> Any:
+    def retrieve(self, grp_id: int | str, **kwargs) -> Response:
         """Retrieve a device group.
 
         :param grp_id: the id value"""
-        return self.get(url=f"{grp_id}", **kwargs)  # Return single group object
+        return self.get(url=f"{grp_id}", **kwargs)
 
-    def get_attributes(self, grp_id: int | str, **kwargs) -> Any:
+    def get_attributes(self, grp_id: int | str, **kwargs) -> Response:
         """Get custom attributes for a specific device group.
 
         :param grp_id: the id value"""
-        return self.get(url=f"{grp_id}/custom_attribute_values", **kwargs).json()  # Return json content of attributes
+        return self.get(url=f"{grp_id}/custom_attribute_values", **kwargs)
 
-    def set_attribute(self, grp_id: int | str, attr_name: str, attr_value: str, **kwargs) -> Any:
+    def set_attribute(self, grp_id: int | str, attr_name: str, attr_value: str, **kwargs) -> Response:
         """Set custom attributes for a specific device group
 
         :param grp_id: the id value
         :param attr_name: the name of the custom attribute to set the attribute value of
         :param attr_value: the value to set"""
         params = self._k2p(self.set_attribute, vals=locals(), ignored_locals=["grp_id", "attr_name"])
-        # Return JSON content of the updated value
-        return self.put(url=f"{grp_id}/custom_attribute_values/{attr_name}", params=params, **kwargs).json()
+        return self.put(url=f"{grp_id}/custom_attribute_values/{attr_name}", params=params, **kwargs)
