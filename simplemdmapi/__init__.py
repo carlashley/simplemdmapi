@@ -24,3 +24,5 @@ custom_profiles = CustomConfigProfiles()
 profiles = Profiles()
 dep_servers = DEPServers()
 push_certifcatess = PushCertificates()
+
+VERSION = "0.0.20221202"
