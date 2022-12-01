@@ -1,5 +1,6 @@
+from typing import Optional
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any, Dict, Optional
 
 
 class CustomConfigProfiles(SimpleMDMConnector):
@@ -16,7 +17,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
     def assign_to_device_group(self,
                                profile_id: int | str,
                                device_grp_id: int | str,
-                               **kwargs) -> Any:
+                               **kwargs) -> Response:
         """Assign a custom configuration profile to a device group.
 
         :param profile_id: the id value.
@@ -29,7 +30,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
     def unassign_from_device_group(self,
                                    profile_id: int | str,
                                    device_grp_id: int | str,
-                                   **kwargs) -> Any:
+                                   **kwargs) -> Response:
         """Unassign a custom configuration profile from a device group.
 
         :param profile_id: the id value.
@@ -42,7 +43,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
     def assign_to_device(self,
                          profile_id: int | str,
                          grp_id: int | str,
-                         **kwargs) -> Any:
+                         **kwargs) -> Response:
         """Assign a custom configuration profile to a device group.
 
         :param profile_id: the id value.
@@ -55,7 +56,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
     def unassign_from_device(self,
                              profile_id: int | str,
                              device_id: int | str,
-                             **kwargs) -> Any:
+                             **kwargs) -> Response:
         """Unassign a custom configuration profile from a device group.
 
         :param profile_id: the id value.
@@ -70,7 +71,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
                mobileconfig: str = None,
                user_scope: Optional[bool] = False,
                attribute_support: Optional[bool] = False,
-               **kwargs) -> Any:
+               **kwargs) -> Response:
         """Create a custom configuration profile.
 
         :param name: the name of the profile
@@ -82,20 +83,20 @@ class CustomConfigProfiles(SimpleMDMConnector):
         params = self._k2p(self.update, vals=locals(), ignored_locals=["profile_id"])
         return self.patch(files=files, params=params, **kwargs)  # Returns ??
 
-    def delete_profile(self, profile_id: int | str, **kwargs) -> Any:
+    def delete_profile(self, profile_id: int | str, **kwargs) -> Response:
         """Delete a custom configuration profile.
 
         :param profile_id: the id value.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.delete(url=f"{profile_id}", **kwargs)  # Returns ??
 
-    def list_all(self, **kwargs) -> Any:
+    def list_all(self, **kwargs) -> Response:
         """List all custom configuration profiles.
 
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.paginate(**kwargs)  # Returns a list of profile objects
 
-    def retrieve(self, profile_id: int | str, **kwargs) -> Any:
+    def retrieve(self, profile_id: int | str, **kwargs) -> Response:
         """Retrieve one custom configuration profile.
 
         :param profile_id: the id value.
@@ -110,7 +111,7 @@ class CustomConfigProfiles(SimpleMDMConnector):
                mobileconfig: Optional[str] = None,
                user_scope: Optional[bool] = False,
                attribute_support: Optional[bool] = False,
-               **kwargs) -> Any:
+               **kwargs) -> Response:
         """Update details about a custom configuration profile.
 
         :param profile_id: the id value.
@@ -139,7 +140,7 @@ class Profiles(SimpleMDMConnector):
     def assign_to_device_group(self,
                                profile_id: int | str,
                                device_grp_id: int | str,
-                               **kwargs) -> Any:
+                               **kwargs) -> Response:
         """Assign a profile to a device group.
 
         :param profile_id: the id value.
@@ -152,7 +153,7 @@ class Profiles(SimpleMDMConnector):
     def unassign_from_device_group(self,
                                    profile_id: int | str,
                                    device_grp_id: int | str,
-                                   **kwargs) -> Any:
+                                   **kwargs) -> Response:
         """Unassign a profile from a device group.
 
         :param profile_id: the id value.
@@ -165,7 +166,7 @@ class Profiles(SimpleMDMConnector):
     def assign_to_device(self,
                          profile_id: int | str,
                          grp_id: int | str,
-                         **kwargs) -> Any:
+                         **kwargs) -> Response:
         """Assign a profile to a device group.
 
         :param profile_id: the id value.
@@ -178,7 +179,7 @@ class Profiles(SimpleMDMConnector):
     def unassign_from_device(self,
                              profile_id: int | str,
                              device_id: int | str,
-                             **kwargs) -> Any:
+                             **kwargs) -> Response:
         """Unassign a profile from a device group.
 
         :param profile_id: the id value.
@@ -188,7 +189,7 @@ class Profiles(SimpleMDMConnector):
 
         return self.delete(url=url, **kwargs)  # Returns ??
 
-    def list_all(self, search: Optional[str] = None, **kwargs) -> Any:
+    def list_all(self, search: Optional[str] = None, **kwargs) -> Response:
         """List all profiles.
 
         :param search: optional string to search profiles by name/type
