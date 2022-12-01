@@ -1,5 +1,6 @@
+from typing import Optional
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any, Optional
 
 
 class DEPServers(SimpleMDMConnector):
@@ -11,7 +12,7 @@ class DEPServers(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def list_all(self, **kwargs) -> Any:
+    def list_all(self, **kwargs) -> Response:
         """List all DEP Servers.
 
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -21,7 +22,7 @@ class DEPServers(SimpleMDMConnector):
                      search: Optional[str] = None,
                      include_awaiting_enrollment: Optional[bool] = False,
                      include_secret_custom_attributes: Optional[bool] = False,
-                     **kwargs) -> Any:
+                     **kwargs) -> Response:
         """List all devices for the specified DEP/ADE server.
 
         :param server_id: the id value.
@@ -34,7 +35,7 @@ class DEPServers(SimpleMDMConnector):
         params = self._k2p(self.list_all, vals=locals(), ignored_locals=list())
         return self.paginate(params=params, **kwargs)  # Return list of device objects in the DEP/ADE server
 
-    def retrieve(self, server_id: int | str, **kwargs) -> Any:
+    def retrieve(self, server_id: int | str, **kwargs) -> Response:
         """Retrieve information about a dep_server.
 
         :param server_id: the id value.
@@ -44,7 +45,7 @@ class DEPServers(SimpleMDMConnector):
     def retrieve_device(self,
                         server_id: int | str,
                         device_id: int | str,
-                        **kwargs) -> Any:
+                        **kwargs) -> Response:
         """Retrieve DEP device.
 
         :param server_id: the id value.
@@ -54,7 +55,7 @@ class DEPServers(SimpleMDMConnector):
 
         return self.get(url=url, **kwargs)  # Return device object
 
-    def sync(self, server_id: int | str, **kwargs) -> Any:
+    def sync(self, server_id: int | str, **kwargs) -> Response:
         """Sync DEP server with Apple.
 
         :param server_id: the id value.
@@ -73,25 +74,25 @@ class PushCertificates(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def get_csr(self, **kwargs) -> Any:
+    def get_csr(self, **kwargs) -> Response:
         """Generate a signed CSR for the Apply Push Certificates portal.
 
         The certificate is returned in the 'data' key, and can be uploaded as is.
 
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get(url="scsr", **kwargs).json()
+        return self.get(url="scsr", **kwargs)
 
-    def show(self, **kwargs) -> Any:
+    def show(self, **kwargs) -> Response:
         """Show details of the current push certificate.
 
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get(**kwargs).json()  # Return push certificate details object
+        return self.get(**kwargs)  # Return push certificate details object
 
     def update(self,
                file: str,
                apple_id: Optional[str] = None,
-               **kwargs) -> Any:
+               **kwargs) -> Response:
         """Upload a new certificate (replaces the existing certificate).
 
         :param params: specific parameters to provide to the API query.
@@ -99,4 +100,4 @@ class PushCertificates(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         files = {"file": file}
         params = self._k2p(self.update, vals=locals(), ignored_locals=list())
-        return self.put(params=params, files=files, upload_key="file", **kwargs).json()
+        return self.put(params=params, files=files, upload_key="file", **kwargs)
