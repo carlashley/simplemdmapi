@@ -1,5 +1,5 @@
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any
 
 
 class Enrollments(SimpleMDMConnector):
@@ -11,27 +11,27 @@ class Enrollments(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def delete(self, enrollment_id: int | str, **kwargs) -> Any:
+    def delete(self, enrollment_id: int | str, **kwargs) -> Response:
         """Delete an enrollment.
 
         :param enrollment_id: the id value.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.delete(url=f"{enrollment_id}", **kwargs)  # Return 204 status
 
-    def list_all(self, **kwargs) -> Any:
+    def list_all(self, **kwargs) -> Response:
         """List all enrollments.
 
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.paginate(**kwargs)  # Return list of enrollment objects
 
-    def show(self, enrollment_id: int | str, **kwargs) -> Any:
+    def show(self, enrollment_id: int | str, **kwargs) -> Response:
         """Show details of an enrollment.
 
         :param enrollment_id: the id value.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         return self.get(url=f"{enrollment_id}", **kwargs)  # Return an enrollment object
 
-    def send_invitation(self, enrollment_id: int | str, contact: str, **kwargs) -> Any:
+    def send_invitation(self, enrollment_id: int | str, contact: str, **kwargs) -> Response:
         """Send an enrollment invitation to an email address or phone number.
 
         Note, the phone number must be prefixed with a '+' if it is an international phone number.
