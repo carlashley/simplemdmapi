@@ -24,38 +24,7 @@ variable, but this is not recommended).
 - `SIMPLEMDM_SLEEP_WAIT` number of seconds (int or float representation) to sleep between each request (to avoid API rate limiting); defaults to `1.0`
 - `SIMPLEMDM_TOKEN` actual token string for authentication or path to a plain text file containing the token string (on a single line); defaults to `/var/root/simplemdm_token`
 
-### Package use
-```
-from simplemdmapi import (account,
-                          apps,
-                          managed_app_configs,
-                          assignment_groups,
-                          custom_attributes,
-                          device_groups,
-                          devices,
-                          enrollments,
-                          installed_apps,
-                          logs,
-                          profiles,
-                          dep_servers,
-                          push_certifcatess)
-from pprint import pformat
-
-# Example of printing all device objects.
-print(pformat(devices.list_all()))
-
-# Example of uploading an app binary using the 'apps' API endpoint.
-apps.create(params={"name": "macOS Big Sur 11.6.6"},
-            files={"binary": "/tmp/macOS_BigSurInstaller.pkg"})
-
-# Example of updating an app binary using the 'apps' API endpoint and
-# overriding the default timeout value that the underlying 'requests'
-# method uses.
-apps.update(params={"name": "macOS Big Sur 11.6.6"},
-           files={"binary": "/tmp/macOS_BigSurInstaller.pkg"},
-           **{"timeout": (5, 60)})
-```
-
+### Use
 Each API method implemented has the ability to pass an expanded dictionary as keyword args (AKA [kwargs](https://realpython.com/python-kwargs-and-args/)), while some specific API methods have arguments that are optional or required (or a combination of).
 
 Keyword arguments passed in to an API method in this package are treated as arguments to pass on to the underlying `requests` calls; this is useful for overriding the global session settings such as timeouts for individual API calls, or if you have different authentication/header needs for specific API calls.
