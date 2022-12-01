@@ -67,7 +67,8 @@ An example using the `devices` endpoint:
 >>> from pprint import pprint
 >>> from simplemdmapi import devices
 >>>
->>> # An example to list all devices (this method paginates the devices endpoint and returns a reconstructed dictionary representing the objects returned)
+>>> # An example to list all devices (this method paginates the devices endpoint and returns a reconstructed
+>>> # dictionary representing the objects returned).
 >>> pprint(devices.list_all())
 {'data': [{'attributes': {[redacted]}],
  'has_more': False}
@@ -77,17 +78,20 @@ An example using the `devices` endpoint:
 {'data': [{'attributes': {[redacted]}],
  'has_more': False}
 >>>
->>> # An example to search all the devices for a specific serial number using the optional 'search' argument and include secret custom attributes.
+>>> # An example to search all the devices for a specific serial number using the optional 'search' argument
+>>> # and include secret custom attributes.
 >>> pprint(devices.list_all(search="C07DD03ZPJH7", include_secret_custom_attributes=True))
 {'data': [{'attributes': {[redacted]}],
  'has_more': False}
 >>>
->>> # An example to search all the devices for a specific serial number using the optional 'search' argument and include secret custom attributes
->>> # that also passes on an expanded dictionary as keyword arguments that are used to override various `requests.session` parameters.
+>>> # An example to search all the devices for a specific serial number using the optional 'search' argument
+>>> # and include secret custom attributes that also passes on an expanded dictionary as keyword arguments
+>>> # that are used to override various `requests.session` parameters.
 >>> pprint(devices.list_all(search="C07DD03ZPJH7", include_secret_custom_attributes=True, **{"timeout": (1, 100)})
 {'data': [{'attributes': {[redacted]}],
  'has_more': False}
 >>>
+>>> # An example of restarting a specific device.
 >>> devices.restart(device_id="420")
 <Response [202]>
 ```
