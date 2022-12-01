@@ -58,10 +58,30 @@ apps.update(params={"name": "macOS Big Sur 11.6.6"},
            **{"timeout": (5, 60)})
 ```
 
-Each API call has a `params` argument and a `**kwargs` argument (with several API call's that upload files having an additional `files` argument).
+Each API method implemented has the ability to pass an expanded dictionary as keyword args (AKA [kwargs](https://realpython.com/python-kwargs-and-args/)), while some specific API methods have arguments that are optional or required (or a combination of).
 
-The `params` argument are the parameters to be passed into the API per the SimpleMDM API documentation, while the `**kwargs` argument can simply be
-a dictionary of arguments to pass on to the underlying `requests` call. An example of this would be overriding the default timeout value.
+Keyword arguments passed in to an API method in this package are treated as arguments to pass on to the underlying `requests` calls; this is useful for overriding the global session settings such as timeouts for individual API calls, or if you have different authentication/header needs for specific API calls.
 
-There are also several API calls that take file uploads. This is handled by the `files` argument which is a dictionary containing a key that corresponds to the required key for the API (for example, `binary`, `mobileconfig`, or `file`), with the corresponding value for that key being the file path.
-This `files` dictionary is then passed on to the underlying `requests` call and handled appropriately for uploading.
+An example using the `devices` endpoint:
+```
+>>> from pprint import pprint
+>>> from simplemdmapi import devices
+>>> pprint(devices.list_all())
+{'data': [{'attributes': {[redacted]}],
+ 'has_more': False}
+>>>
+>>> pprint(devices.list_all(search="[serial]"))
+{'data': [{'attributes': {[redacted]}],
+ 'has_more': False}
+>>>
+>>> pprint(devices.list_all(search="C07DD03ZPJH7", include_secret_custom_attributes=True))
+{'data': [{'attributes': {[redacted]}],
+ 'has_more': False}
+>>>
+>>> pprint(devices.list_all(search="C07DD03ZPJH7", include_secret_custom_attributes=True, **{"timeout": (1, 100)})
+{'data': [{'attributes': {[redacted]}],
+ 'has_more': False}
+>>>
+>>> devices.restart(device_id="420")
+<Response [202]>
+```
