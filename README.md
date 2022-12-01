@@ -1,5 +1,5 @@
 # simplemdmapi
-A Python implementation of the SimpleMDM API. This is a work in progress and is not meant for production use at this time.
+A Python implementation of the SimpleMDM API. This is a work in progress and while it can be used in production, do so under advisement that not _every_ API endpoint implementation has been tested thoroughly.
 
 # Requires
 ### Python:
