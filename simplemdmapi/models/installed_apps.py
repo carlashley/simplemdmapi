@@ -1,44 +1,20 @@
+from typing import Optional
 from requests.models import Response
 from ..connector import SimpleMDMConnector
 
 
-class InstalledApps(SimpleMDMConnector):
-    """Installed Apps.
+class Logs(SimpleMDMConnector):
+    """Logs.
 
-    Note: Listing apps on a device is implemented in the 'devices' model.
-
-    SimpleMDM API Documentation: https://simplemdm.com/docs/api/#installed-apps
-    """
-    def __init__(self, endpoint: str = "installed_apps") -> None:
+    SimpleMDM API Documentation: https://simplemdm.com/docs/api/#logs"""
+    def __init__(self, endpoint: str = "logs") -> None:
         self.endpoint = endpoint
         super().__init__()
 
-    def retrieve(self, app_id: int | str, **kwargs) -> Response:
-        """Show details of an installed app.
+    def list_all(self, serial: Optional[str] = None, **kwargs) -> Response:
+        """View logged events for device and admin interactions.
 
-        :param app_id: the id value.
+        :param serial: limit response data to the logs of a single device, no value returns all logs
         :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.get(url=f"{app_id}", **kwargs)  # Return an installed app object
-
-    def request_management(self, app_id: int | str, **kwargs) -> Response:
-        """Request management of an unmanaged app installed on a device.
-
-        :param app_id: the id value.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{app_id}/request_management"
-        return self.post(url=url, **kwargs)  # Return 202 status
-
-    def install_update(self, app_id: int | str, **kwargs) -> Response:
-        """Install app update for an installed app on devices assigned the app.
-
-        :param app_id: the id value.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        url = f"{app_id}/update"
-        return self.post(url=url, **kwargs)  # Return 202 status
-
-    def uninstall(self, app_id: int | str, **kwargs) -> Response:
-        """Uninstall an installed app.
-
-        :param app_id: the id value.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
-        return self.delete(url=f"{app_id}", **kwargs)  # Return 202 status
+        params = self._k2p(self.list_all, vals=locals(), ignored_locals=list())
+        return self.paginate(params=params, **kwargs)  # Return a list of log objects
