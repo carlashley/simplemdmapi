@@ -1,5 +1,6 @@
+from typing import Optional
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any, Optional
 
 
 class Account(SimpleMDMConnector):
@@ -11,16 +12,16 @@ class Account(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def show(self, **kwargs) -> Any:
+    def show(self, **kwargs) -> Response:
         """Retrieve information about your account.
 
         Subscription information is only available for accounts on a manual billing plan."""
-        return self.get(**kwargs).json()  # Return json content of account info
+        return self.get(**kwargs)
 
-    def update(self, name: Optional[str] = None, apple_store_country_code: Optional[str] = None, **kwargs) -> Any:
+    def update(self, name: Optional[str] = None, apple_store_country_code: Optional[str] = None, **kwargs) -> Response:
         """Update details about the account.
 
         :param params: specific parameters to provide to the API query.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         params = self._k2p(self.update, vals=locals(), ignored_locals=list())
-        return self.patch(params=params, **kwargs).json()  # Return json content of updated account info
+        return self.patch(params=params, **kwargs)
