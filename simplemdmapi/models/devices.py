@@ -1,5 +1,6 @@
+from typing import Optional
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any, Optional
 
 
 class ManagedDevices(SimpleMDMConnector):
@@ -11,7 +12,7 @@ class ManagedDevices(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def create(self, name: str, group_id: str, **kwargs) -> Any:
+    def create(self, name: str, group_id: str, **kwargs) -> Response:
         """Create a device.
 
         :param name: the name the device will appear as within SimpleMDM (this is not the host name).
@@ -20,7 +21,7 @@ class ManagedDevices(SimpleMDMConnector):
         params = self._k2p(self.create, locals, list())
         return self.post(params=params, **kwargs)  # Return new enrollment object with enrollment URL
 
-    def delete(self, device_id: int | str, **kwargs) -> Any:
+    def delete(self, device_id: int | str, **kwargs) -> Response:
         """Delete a device.
 
         :param kwargs: specific parameters to provide to the underlying requests function."""
@@ -30,7 +31,7 @@ class ManagedDevices(SimpleMDMConnector):
                  search: Optional[str] = None,
                  include_awaiting_enrollment: Optional[bool] = False,
                  include_secret_custom_attributes: Optional[bool] = False,
-                 **kwargs) -> Any:
+                 **kwargs) -> Response:
         """List all devices.
 
         :param search: limit result response to devices that match the optional string value (searches on
@@ -42,7 +43,7 @@ class ManagedDevices(SimpleMDMConnector):
         params = self._k2p(self.list_all, vals=locals(), ignored_locals=list())
         return self.paginate(params=params, **kwargs)  # Return list of device objects
 
-    def list_profiles(self, device_id: int | str, **kwargs) -> Any:
+    def list_profiles(self, device_id: int | str, **kwargs) -> Response:
         """List profiles assigned to the device (per-device profiles excluded).
 
         :param device_id: the id value.
@@ -51,7 +52,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.paginate(url=url, **kwargs)  # Return list of profile objects
 
-    def list_installed_apps(self, device_id: int | str, **kwargs) -> Any:
+    def list_installed_apps(self, device_id: int | str, **kwargs) -> Response:
         """List profiles assigned to the device (per-device profiles excluded).
 
         :param device_id: the id value.
@@ -60,7 +61,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.paginate(url=url, **kwargs)  # Return list of installed app objects
 
-    def list_users(self, device_id: int | str, **kwargs) -> Any:
+    def list_users(self, device_id: int | str, **kwargs) -> Response:
         """List user accounts on a device (macOS only).
 
         :param device_id: the id value.
@@ -72,7 +73,7 @@ class ManagedDevices(SimpleMDMConnector):
     def delete_user(self,
                     device_id: int | str,
                     user_id: int | str,
-                    **kwargs) -> Any:
+                    **kwargs) -> Response:
         """Delete a user from a device (macOS only).
 
         :param device_id: the id value.
@@ -83,7 +84,8 @@ class ManagedDevices(SimpleMDMConnector):
         # Return 202 status (returns 422 for unsupported devices)
         return self.delete(url=url, **kwargs)
 
-    def retrieve(self, device_id: int | str, include_secret_custom_attributes: Optional[bool] = False, **kwargs) -> Any:
+    def retrieve(self, device_id: int | str,
+                 include_secret_custom_attributes: Optional[bool] = False, **kwargs) -> Response:
         """Retrieve one application.
 
         :param device_id: the id value.
@@ -91,9 +93,9 @@ class ManagedDevices(SimpleMDMConnector):
                                                  secret; default is False
         :param kwargs: specific parameters to provide to the underlying requests function."""
         params = self._k2p(self.retrieve, vals=locals(), ignored_locals=list())
-        return self.get(url=f"{device_id}", params=params, **kwargs).json()  # Return device object
+        return self.get(url=f"{device_id}", params=params, **kwargs)  # Return device object
 
-    def update(self, name: Optional[str] = None, device_name: Optional[str] = None, **kwargs) -> Any:
+    def update(self, name: Optional[str] = None, device_name: Optional[str] = None, **kwargs) -> Response:
         """Update a device.
 
         :param name: the name the device will appear as within SimpleMDM (this is not the host name).
@@ -102,7 +104,7 @@ class ManagedDevices(SimpleMDMConnector):
         params = self._k2p(self.update, vals=locals(), ignored_locals=list())
         return self.patch(params=params, **kwargs)  # Return new enrollment object with enrollment URL
 
-    def get_attributes(self, device_id: int | str,  **kwargs) -> Any:
+    def get_attributes(self, device_id: int | str,  **kwargs) -> Response:
         """Get custom attributes for a specific device.
 
         :param device_id: the id value.
@@ -110,21 +112,21 @@ class ManagedDevices(SimpleMDMConnector):
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{device_id}/custom_attribute_values"
 
-        return self.get(url=url, **kwargs).json()  # Return custom attribute object
+        return self.get(url=url, **kwargs)  # Return custom attribute object
 
     def set_attribute(self,
                       device_id: int | str,
                       attr_name: str,
-                      **kwargs) -> Any:
+                      **kwargs) -> Response:
         """Get custom attributes for a specific device.
 
         :param device_id: the id value.
         :param kwargs: specific parameters to provide to the underlying requests function."""
         url = f"{device_id}/custom_attribute_values/{attr_name}"
 
-        return self.put(url=url, **kwargs).json()  # Return updated custom attribute object
+        return self.put(url=url, **kwargs)  # Return updated custom attribute object
 
-    def push_assigned_apps(self, device_id: int | str, **kwargs) -> Any:
+    def push_assigned_apps(self, device_id: int | str, **kwargs) -> Response:
         """Push apps not already installed on da device to that device.
 
         :param device_id: the id value.
@@ -133,7 +135,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def refresh(self, device_id: int | str, **kwargs) -> Any:
+    def refresh(self, device_id: int | str, **kwargs) -> Response:
         """Refresh device information and app inventory for a device.
 
         :param device_id: the id value.
@@ -142,7 +144,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status (returns 429 for excessive requests)
 
-    def restart(self, device_id: int | str, **kwargs) -> Any:
+    def restart(self, device_id: int | str, **kwargs) -> Response:
         """Send a restart command to a device
 
         :param device_id: the id value.
@@ -151,7 +153,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def shutdown(self, device_id: int | str, **kwargs) -> Any:
+    def shutdown(self, device_id: int | str, **kwargs) -> Response:
         """Send a shutdown command to a device
 
         :param device_id: the id value.
@@ -165,7 +167,7 @@ class ManagedDevices(SimpleMDMConnector):
              message: Optional[str] = None,
              phone_number: Optional[str] = None,
              pin: Optional[str] = None,
-             **kwargs) -> Any:
+             **kwargs) -> Response:
         """Lock a device and optionally display a message and phone number.
 
         :param device_id: the id value.
@@ -184,7 +186,7 @@ class ManagedDevices(SimpleMDMConnector):
                          message: str,
                          phone_number: str,
                          footnote: Optional[str] = None,
-                         **kwargs) -> Any:
+                         **kwargs) -> Response:
         """Activate lost mode on a device and optionally display a message and phone number.
 
         :param device_id: the id value.
@@ -198,7 +200,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, params=params, **kwargs)  # Return 202 status
 
-    def disable_lost_mode(self, device_id: int | str, **kwargs) -> Any:
+    def disable_lost_mode(self, device_id: int | str, **kwargs) -> Response:
         """Turn lost mode off for a device.
 
         :param device_id: the id value.
@@ -207,7 +209,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.delete(url=url, **kwargs)  # Return ??
 
-    def play_sound(self, device_id: int | str, **kwargs) -> Any:
+    def play_sound(self, device_id: int | str, **kwargs) -> Response:
         """Play a sound on a device. Only works when the device is in lost mode.
 
         :param device_id: the id value.
@@ -216,7 +218,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return ??
 
-    def update_location(self, device_id: int | str, **kwargs) -> Any:
+    def update_location(self, device_id: int | str, **kwargs) -> Response:
         """Request the device provide the current and up-to-date location.
 
         :param device_id: the id value.
@@ -225,7 +227,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return ??
 
-    def clear_passcode(self, device_id: int | str, **kwargs) -> Any:
+    def clear_passcode(self, device_id: int | str, **kwargs) -> Response:
         """Remove the passcode from a device.
 
         :param device_id: the id value.
@@ -234,7 +236,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def clear_firmware_password(self, device_id: int | str, **kwargs) -> Any:
+    def clear_firmware_password(self, device_id: int | str, **kwargs) -> Response:
         """Remove a firmware password from a device. Only works if the password was originally set by SimpleMDM.
 
         :param device_id: the id value.
@@ -243,7 +245,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def clear_recovery_lock_password(self, device_id: int | str, **kwargs) -> Any:
+    def clear_recovery_lock_password(self, device_id: int | str, **kwargs) -> Response:
         """Clear a recovery lock password from a device. Only works if the password was originally set by SimpleMDM.
 
         :param device_id: the id value.
@@ -252,7 +254,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def rotate_recovery_lock_password(self, device_id: int | str, **kwargs) -> Any:
+    def rotate_recovery_lock_password(self, device_id: int | str, **kwargs) -> Response:
         """Rotate a recovery lock password on a device. Only works if the password was originally set by SimpleMDM.
 
         :param device_id: the id value.
@@ -261,7 +263,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def rotate_filevault_key(self, device_id: int | str, **kwargs) -> Any:
+    def rotate_filevault_key(self, device_id: int | str, **kwargs) -> Response:
         """Rotate the FileVault recovery key of a device. SimpleMDM must be aware of the existing recovery key.
 
         :param device_id: the id value.
@@ -270,7 +272,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, **kwargs)  # Return 202 status
 
-    def wipe(self, device_id: int | str, pin: int | str, **kwargs) -> Any:
+    def wipe(self, device_id: int | str, pin: int | str, **kwargs) -> Response:
         """Wipe the device (Erase all Contents and Settings). Unenrolls device and returns to factory config.
 
         The 'pin' parameter must be supplied if the device is a Mac that does not have a T2 chip (presumably
@@ -285,7 +287,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, params=params, **kwargs)  # Return 202 status
 
-    def update_os(self, device_id: int | str, macos_update_mode: Optional[str] = None, **kwargs) -> Any:
+    def update_os(self, device_id: int | str, macos_update_mode: Optional[str] = None, **kwargs) -> Response:
         """Update the device to the latest OS release. Currently only supported by iOS devices.
 
         :param device_id: the id value.
@@ -301,7 +303,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, params=params, **kwargs)  # Return 202 status
 
-    def enable_remote_desktop(self, device_id: int | str, **kwargs) -> Any:
+    def enable_remote_desktop(self, device_id: int | str, **kwargs) -> Response:
         """Enable Remote Desktop on the specified device. macOS 10.14.4+ only.
 
         This call will return a HTTP 400 error if Remote Desktop is already enabled on the target device,
@@ -314,7 +316,7 @@ class ManagedDevices(SimpleMDMConnector):
 
         return self.post(url=url, ignore_statuses=[400], **kwargs)  # Return 202 status
 
-    def disable_remote_desktop(self, device_id: int | str, **kwargs) -> Any:
+    def disable_remote_desktop(self, device_id: int | str, **kwargs) -> Response:
         """Disable Remote Desktop on the specified device. macOS 10.14.4+ only.
 
         :param device_id: the id value.
