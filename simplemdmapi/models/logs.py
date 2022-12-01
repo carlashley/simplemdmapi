@@ -1,5 +1,6 @@
+from typing import Optional
+from requests.models import Response
 from ..connector import SimpleMDMConnector
-from typing import Any, Optional
 
 
 class Logs(SimpleMDMConnector):
@@ -10,7 +11,7 @@ class Logs(SimpleMDMConnector):
         self.endpoint = endpoint
         super().__init__()
 
-    def list_all(self, serial: Optional[str] = None, **kwargs) -> Any:
+    def list_all(self, serial: Optional[str] = None, **kwargs) -> Response:
         """View logged events for device and admin interactions.
 
         :param serial: limit response data to the logs of a single device, no value returns all logs
