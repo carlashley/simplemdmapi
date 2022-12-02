@@ -4,7 +4,7 @@ import requests
 from os import getenv
 from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
-from time import sleep
+from time import monotonic, sleep
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
@@ -17,6 +17,7 @@ class SimpleMDMConnector:
     HTTP_READ_TIMEOUT: int = getenv("SIMPLEMDM_READ_TIMEOUT") or 15
     HTTP_RETRY_BACKOFF: int = getenv("SIMPLEMDM_RETRY_BACKOFF") or 1
     HTTP_RETRY_STATUS_LIST: List[int] = [429, 500, 502, 503, 504]
+    HTTP_IGNORE_STATUS_LIST: List[int] = [200, 201, 202]
     HTTP_SLEEP_WAIT: float = getenv("SIMPLEMDM_SLEEP_WAIT") or 1.0
     VALID_FILE_KEYS = ["binary", "file", "mobileconfig"]
     VALID_FILE_EXTS = [".mobileconfig", ".pkg", ".plist", ".txt"]
@@ -25,6 +26,9 @@ class SimpleMDMConnector:
     RETRY: Retry = Retry(total=int(HTTP_MAX_RETRIES),
                          status_forcelist=HTTP_RETRY_STATUS_LIST,
                          backoff_factor=int(HTTP_RETRY_BACKOFF))
+
+    if HTTP_SLEEP_WAIT:  # Convert to float
+        HTTP_SLEEP_WAIT = float(HTTP_SLEEP_WAIT)
 
     def __init__(self,
                  version: str = "v1",
@@ -35,7 +39,8 @@ class SimpleMDMConnector:
         :param proxies: dictionary of proxy information to pass on to the session initialisation"""
         self.version = version
         self.session = self._initialise_session(proxies=proxies)
-        self.attempt = 0  # internally track the attempts made
+        self._attempt = 0  # internally track the attempts made
+        self._last_req_ts = None  # timestamp for tracking rate limit requests
 
     def _clean_kwargs(self, kwargs: Dict[Any, Any]) -> Dict[Any, Any]:
         """Cleans a dictionary of 'keyword' arguments by removing keys that are not part of the standard
@@ -120,9 +125,6 @@ class SimpleMDMConnector:
 
         return result
 
-        # return {p.name: vals.get(p.name) for p in signature.parameters
-        #         if p not in ignored_locals and vals.get(p.name) and vals.get(p.name) not in self.VALID_FILE_KEYS}
-
     def _prepare_args(self, url: Optional[str] = None, **kwargs) -> Tuple[Any, ...]:
         """Creates a full URL string from the provided URL and the API URL path and cleans up keyword arguments for
         use in any 'requests.Session.method()' call.
@@ -133,7 +135,11 @@ class SimpleMDMConnector:
                     specific endpoint being called; for example, 'id/lock' or 'id/users/user_id'"""
         url = self._urljoin(self.BASE_URL, self.version, self.endpoint, url)
         i_s = kwargs.get("ignore_statuses", list())
-        r_s = kwargs.get("retry_statuses", self.HTTP_RETRY_STATUS_LIST)
+        i_s.extend(self.HTTP_IGNORE_STATUS_LIST)  # merge with default ignore status codes
+        i_s = list(set(i_s))  # Uniqify
+        r_s = kwargs.get("retry_statuses", list())
+        r_s.extend(self.HTTP_RETRY_STATUS_LIST)  # merge with default retry status codes
+        r_s = list(set(r_s))  # Uniqify
         kwargs["timeout"] = kwargs.get("timeout", self.HTTP_CONNECT_TIMEOUT)
         kwargs = self._clean_kwargs(kwargs)
 
@@ -155,6 +161,18 @@ class SimpleMDMConnector:
                 return "".join(f.readlines()).strip()
         else:
             return t
+
+    def _should_sleep(self, _mt: float = monotonic()) -> bool:
+        """Check if there should be a sleep between each request being sent.
+
+        :param _mt: monotonic time value"""
+        if self._last_req_ts:
+            last_req_delta = _mt - self._last_req_ts
+            self._last_req_ts = monotonic()
+
+            return last_req_delta < self.HTTP_SLEEP_WAIT
+
+        return False
 
     def _session_method(self, method: str, url: Optional[str] = None, **kwargs) -> Optional[requests.models.Response]:
         """Performs the specified method action using the constructed session.
@@ -179,16 +197,18 @@ class SimpleMDMConnector:
         else:
             req = self.session.request(method=method, url=url, **kwargs)
 
-        # Retry
+        # Retry but only if the status code slips through the inbuilt session retry configuration.
         if req.status_code in retry_statuses:
-            wait = float(self.HTTP_SLEEP_WAIT)
-            sleep(wait)
+            # if self._attempt < self.HTTP_MAX_RETRIES:
+            while self._attempt < self.HTTP_MAX_RETRIES:
+                if self._should_sleep():
+                    sleep(self.HTTP_SLEEP_WAIT)
 
-            if self.attempt < self.HTTP_MAX_RETRIES:
                 self._session_method(method=method, url=url, kwargs=kwargs)  # pass original values through
-                self.attempt += 1
-        else:
-            self.attempt = 0  # ensure reset attempt count occurs on success
+                self._attempt += 1
+
+            self._attempt = 0  # ensure reset attempt count occurs on success
+            self._last_req_ts = None  # ensure last request timestamp is reset on success
 
         # Raise exceptions if necessary, ignores any status codes that are safe to ignore,
         # as some of the API methods return status codes that would technically be considered
