@@ -1,14 +1,14 @@
-from .models.account import Account
-from .models.apps import Apps, ManagedAppConfigs
-from .models.assignment_groups import AssignmentGroups
-from .models.custom_attributes import CustomAttributes
-from .models.device_groups import DeviceGroups
-from .models.devices import ManagedDevices
-from .models.enrollments import Enrollments
-from .models.installed_apps import InstalledApps
-from .models.logs import Logs
-from .models.profiles import CustomConfigProfiles, Profiles
-from .models.servers import DEPServers, PushCertificates
+from .endpoints.account import Account
+from .endpoints.apps import Apps, ManagedAppConfigs
+from .endpoints.assignment_groups import AssignmentGroups
+from .endpoints.custom_attributes import CustomAttributes
+from .endpoints.device_groups import DeviceGroups
+from .endpoints.devices import ManagedDevices
+from .endpoints.enrollments import Enrollments
+from .endpoints.installed_apps import InstalledApps
+from .endpoints.logs import Logs
+from .endpoints.profiles import CustomConfigProfiles, Profiles
+from .endpoints.servers import DEPServers, PushCertificates
 
 account = Account()
 apps = Apps()
