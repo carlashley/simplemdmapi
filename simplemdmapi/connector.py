@@ -12,14 +12,14 @@ from ._mixins import StatusesMixin, TokenMixin
 class SimpleMDMConnector(StatusesMixin, TokenMixin):
     """Connection class to connect to SimpleMDM."""
     BASE_URL: str = "https://a.simplemdm.com/api"
-    HTTP_PAGINATE_MAX_RESULTS = int(getenv("SIMPLEMDM_RESULTS_PAGINATION", 200))
+    HTTP_PAGINATE_MAX_RESULTS: int = int(getenv("SIMPLEMDM_RESULTS_PAGINATION", 200))
     HTTP_CONNECT_TIMEOUT: int = int(getenv("SIMPLEMDM_CONNECT_TIMEOUT", 5))
     HTTP_READ_TIMEOUT: int = int(getenv("SIMPLEMDM_READ_TIMEOUT", 5))
     HTTP_MAX_RETRIES: int = int(getenv("SIMPLEMDM_MAX_RETRIES", 3))
     HTTP_RETRY_BACKOFF: int = int(getenv("SIMPLEMDM_RETRY_BACKOFF", 1))
     HTTP_SLEEP_WAIT: float = float(getenv("SIMPLEMDM_SLEEP_WAIT", 1.0))
-    HTTP_RETRY_STATUS_LIST = list[int] = [429, 500, 502, 503, 504]
-    HTTP_IGNORE_STATUS_ERR = list[int] = [200, 201, 202]
+    HTTP_RETRY_STATUS_LIST: list[int] = [429, 500, 502, 503, 504]
+    HTTP_IGNORE_STATUS_ERR: list[int] = [200, 201, 202]
     DEFAULT_AUTH_TOKEN_PATH: Path = Path("/var/root/simplemdm_token")
     _TOKEN: str | Path = getenv("SIMPLEMDM_TOKEN", DEFAULT_AUTH_TOKEN_PATH)
 
