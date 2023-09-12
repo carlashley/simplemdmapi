@@ -1,6 +1,7 @@
 from functools import wraps
+from requests.adapters import HTTPAdapter, Retry
 from requests.models import Response
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 from ._utilities import urljoin
 
@@ -32,7 +33,7 @@ def _consume_url(*args) -> Optional[tuple[str, list]]:
         return (args[0], [*args[1:]])
 
 
-def _consume_request_kwargs(**kwargs) -> tuple(dict, dict):
+def _consume_request_kwargs(**kwargs) -> tuple[dict, dict]:
     """Parses out any keyword arguments that belong to requests.Session calls from those
     that belong to a decorated request function and returns a tuple object with seperate kwarg dicts.
     :param **kwargs: kwargs from a function decorated by 'request'"""
@@ -73,11 +74,37 @@ def _consume_status_kwargs(self, **kwargs) -> tuple[list[int], list[int]]:
     return (ignore, retry)
 
 
-def file_upload(field: tuple[str, list]) -> Callable:
+def param_kwargs(params: list[str]) -> Callable:
+    """Decorator for internal methods that have parameters to be passed as params to the underlying request.
+    :param params: list of strings representing the kwarg keys that are params."""
+
+    def wrap_function(fn: Callable) -> Callable:
+        """Wraps the method that has the params to parse.
+        :param fn: the callable being decorated"""
+
+        @wraps(fn)
+        def wrap_actions(self, *args, **kwargs) -> Callable:
+            """Wrapper to perform actions on the wrapped fucntion from 'wrap_function'."""
+            print(f"pre param_kwargs: {kwargs}")
+            rqst_params, kwargs = _consume_param_kwargs(params, **kwargs)
+            kwargs["params"] = rqst_params
+            print(f"post param_kwargs: {kwargs}")
+
+            # raise type error for unexpected kwargs
+            for k, _ in kwargs.items():
+                if k not in [*params, *_requests_kwargs, "ignore_statuses", "retry_statuses"]:
+                    raise TypeError(f"{fn.__name__}() got an unexpected keyword argument {k!r}")
+
+            return fn(self, *args, **kwargs)
+
+        return wrap_actions
+
+    return wrap_function
+
+
+def file_upload(file_fn: str) -> Callable:
     """Decorator for internal methods that have a file upload to process.
-    :param field: a tuple with the name of the field where the upload is processed to in the
-                  first index position, and a list of other attribute key names to include in the
-                  'params' kwarg in the second index position"""
+    :param file_fn: name of the field in the kwargs["params"] dict that contains the file name being uploaded"""
 
     def wrap_function(fn: Callable) -> Callable:
         """Wraps the method being used ot perform the POST method.
@@ -86,17 +113,21 @@ def file_upload(field: tuple[str, list]) -> Callable:
         @wraps(fn)
         def wrap_actions(self, *args, **kwargs) -> Response:
             """Wrapper to perform actions on the wrapped function from 'wrap_function'"""
-            fieldname, param_keys = field  # get the string representation of the path
-            params, kwargs = _consume_param_kwargs(param_keys=param_keys, **kwargs)
-            file = kwargs.get(fieldname)  # for opening the file
-            del kwargs[fieldname]  # don't need this in params anymore
+            # note, some API methods have an option to upload a file, depending on the parameters
+            # passed, for example, the apps.create method can optionally upload a file to SimpleMDM,
+            # so test for the existence of an upload file fieldname, and return a post response
+            # either way
+            if file_fn in kwargs.get("params", {}):
+                filename = kwargs["params"].get(file_fn)
 
-            # hardcoded mode of 'read, binary'; a binary object is expected by the API
-            with open(file, "rb") as f:
-                params["files"] = f
-                kwargs.setdefault("params", params)
-                response = self.post(*args, **kwargs)
-                return response
+                del kwargs["params"][file_fn]  # not needed in params anymore
+
+                with open(filename, "rb") as f:
+                    kwargs["params"]["files"] = f
+                    response = self.post(*args, **kwargs)
+                    return response
+            else:
+                return self.post(*args, **kwargs)
 
         return wrap_actions
 
@@ -114,15 +145,31 @@ def request(method: str) -> Callable:
         @wraps(fn)  # keep docstrings, and arguments from original function
         def wrap_actions(self, *args, **kwargs) -> Response:
             """Wrapper to perform actions on the wrapped function from 'wrap_function'."""
+            print(f"request kwargs (start): {kwargs}")
             # pre-process arguments, consuming args and kwargs
+            print(f"request {kwargs}")
             rqst_kwargs, func_kwargs = _consume_request_kwargs(**kwargs)
-            ignore, retry = _consume_status_kwargs(**func_kwargs)
-            url_path, rqst_args = _consume_url(*args)
-            url = urljoin(url_path, base_url=self.base_url)
+            ignore, retry = _consume_status_kwargs(self, **func_kwargs)
+            print(f"consumed rqst_kwargs: {rqst_kwargs}, func_kwargs, {func_kwargs}")
+
+            if args:
+                url_path, rqst_args = _consume_url(*args)
+            else:
+                url_path, rqst_args = None, []
+
+            url = urljoin(self.api_vers, self.endpoint, url_path, base_url=self.BASE_URL)
+            print(f"urljoined: {url}, rqst_args: {rqst_args}")
 
             # modify the session with some values
             rqst_kwargs.setdefault("timeout", (self.HTTP_CONNECT_TIMEOUT, self.HTTP_READ_TIMEOUT))
-            self.session.mount("https://", self._session_retry(retry))
+            self.session.mount(
+                "https://",
+                HTTPAdapter(
+                    max_retries=Retry(
+                        total=self.HTTP_MAX_RETRIES, status_forcelist=retry, backoff_factor=self.HTTP_RETRY_BACKOFF
+                    )
+                ),
+            )
 
             # now perform the request
             response = self.session.request(method, url, *rqst_args, **rqst_kwargs)
@@ -146,8 +193,11 @@ def paginate(fn: Callable) -> Callable:
     @wraps(fn)
     def wrapper_for_paginating(self, *args, **kwargs):
         """Performs the pagination."""
+        print(f"paginate args, kwargs: {args}, {kwargs}")
         has_more = True
-        params, kwargs = _consume_param_kwargs(param_keys=["limit", "starting_after"])
+        existing_params = kwargs.get("params", {})
+        kwargs, params = _consume_request_kwargs(**kwargs)  # don't use consume_param_kwargs, keep actual params intact
+        params.update(existing_params)
         params.setdefault("limit", 100)
         params.setdefault("starting_after", 0)
         kwargs["params"] = params
@@ -172,6 +222,7 @@ def url_suffixes(suffix: str, add_kwarg_vals_to_url: Optional[list] = []):
     and additional values from kwargs provided to the API method, for example, adding 'bluetooth'
     to 'https://a.simplemdm.com/api/v1/devices/{id}' to become:
         'https://a.simplemdm.com/api/v1/devices/{id}/bluetooth'
+    Note: This decorator should be applied as the last decorator of a method.
     Items in the 'add_kwargs_vals_to_url' are processed in order, and any matching kwarg value is
     then added to the URL, for example, turning url_suffixes('custom_attribute_values', ["attr_name"])
     into:
@@ -183,6 +234,16 @@ def url_suffixes(suffix: str, add_kwarg_vals_to_url: Optional[list] = []):
         @wraps(fn)
         def wrap_action(self, *args, **kwargs) -> Callable:
             """This wraps the method and returns the function with a new set of *args"""
+            print(fn.__name__)
+            # a list of values from kwargs["params"] that need to get added to the URL
+            if kwargs.get("params"):
+                url_kwarg_param_vals = [v for k, v in kwargs["params"].items() if k in add_kwarg_vals_to_url]
+                # update params to reflect consumed values that don't get posted as a param because they form
+                # part of the url
+                kwargs["params"] = {k: v for k, v in kwargs["params"].items() if k not in add_kwarg_vals_to_url}
+            else:
+                url_kwarg_param_vals = []
+
             try:
                 new_path = f"{args[0]}/{suffix}"
             except IndexError:
@@ -190,12 +251,12 @@ def url_suffixes(suffix: str, add_kwarg_vals_to_url: Optional[list] = []):
                 raise Exception(f"Error: could not append {suffix!r} to URL")
             finally:
                 if add_kwarg_vals_to_url:
-                    kwargs_path = "/".join(kwargs.get(kv) for kv in add_kwarg_vals_to_url)
-                    new_path = f"{new_path}/{kwargs_path}"
+                    values_path = "/".join(kwargs.get(v) for v in url_kwarg_param_vals)
+                    new_path = f"{new_path}/{values_path}"
 
                 args = [new_path, *args[1:]] if args else [new_path]
-
-                return fn(*args, **kwargs)
+                print(f"url_suffixes args, kwargs: {args}, {kwargs}")
+                return fn(self, *args, **kwargs)
 
         return wrap_action
 
