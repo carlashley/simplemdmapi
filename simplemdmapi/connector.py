@@ -4,6 +4,7 @@ import requests
 from os import getenv
 from pathlib import Path
 from typing import Optional
+from keychain import read_password
 
 from ._decorators import request
 from ._mixins import StatusesMixin, TokenMixin
@@ -32,8 +33,8 @@ class SimpleMDMConnector(StatusesMixin, TokenMixin):
         """Initialise a requests.Session instance for qeuries.
         :param proxies: optional dictionary object representing a proxy configuration."""
         session = requests.Session()
-        session.update(proxies)
-        session.auth = requests.auth.HTTPBasicAuth(self.read_token(tkn))
+        session.proxies.update(proxies)
+        session.auth = requests.auth.HTTPBasicAuth(read_password("simplemdmapi-full"), "")
 
         return session
 
