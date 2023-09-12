@@ -123,7 +123,7 @@ def file_upload(file_fn: str) -> Callable:
                 del kwargs["params"][file_fn]  # not needed in params anymore
 
                 with open(filename, "rb") as f:
-                    kwargs["params"]["files"] = f
+                    kwargs["files"] = {file_fn: f}
                     response = self.post(*args, **kwargs)
                     return response
             else:
