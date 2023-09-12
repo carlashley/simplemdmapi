@@ -1,88 +1,99 @@
 from requests.models import Response
-from typing import Generator, Optional
+from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import paginate, url_suffixes
-from .._validators import all_digits, params_or_required, pin_length, validate_param_opts
+from .._decorators import paginate, param_kwargs, url_suffixes
+from .._validators import all_params, any_params, validate_pin, validate_param_opts
+
+_param_kwargs = {
+    "list_all": [
+        "search",
+        "include_awaiting_enrollment",
+        "include_secret_custom_attributes",
+        "starting_after",
+        "limit",
+    ],
+    "create": ["name", "group_id"],
+    "update": ["name", "device_name"],
+    "delete_user": ["user_id"],
+    "restart": ["rebuild_kernal_cache", "notify_user"],
+    "lock": ["message", "phone_number", "pin"],
+    "set_admin_password": ["new_password"],
+    "wipe": ["pin"],
+    "update_os": ["os_update_mode", "version_type"],
+    "set_timezone": ["time_zone"],
+    "set_device_attributes": ["attr_name", "value"],
+    "enable_lost_mode": ["message", "phone_number", "footnote"],
+    "set_multiple_device_attributes": ["json_data"],
+}
+
+_param_opts_validation = {
+    "update_os": [
+        ("os_update_mode", ["smart_update", "download_only", "notify_only", "install_asap", "force_update"]),
+        ("version_type", ["latest_minor_version", "latest_major_version"]),
+    ]
+}
 
 
 class Devices(SimpleMDMConnector):
-    def __init__(self, endpoint: str = "devices") -> None:
+    """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#devices"""
+
+    def __init__(self, endpoint: str = "devices", dry_run: bool = False) -> None:
         self.endpoint = endpoint
+        self.dry_run = dry_run
         super().__init__()
 
+    @param_kwargs(_param_kwargs["list_all"])
     @paginate
-    def list_all(
-        self,
-        search: Optional[str] = None,
-        inc_await_enr: Optional[bool] = False,
-        inc_secret_attrs: Optional[bool] = True,
-        **kwargs,
-    ) -> Generator[dict, None, None]:
+    def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all devices.
         :param limit: number of objects per page; default is 100 (the SimpleMDM API returns 10 objects by default)
         :param starting_after: device id to start pagination after; default is 0 for first device"""
-        if search:
-            kwargs["params"]["search"] = search
-
-        if inc_await_enr:
-            kwargs["params"]["include_awaiting_enrollment"] = inc_await_enr
-
-        if inc_secret_attrs:
-            kwargs["params"]["include_secret_custom_attributes"] = inc_secret_attrs
-
         return self.get(**kwargs)
 
-    def retrieve(self, device_id: str, inc_secret_attrs: bool = True, **kwargs) -> Response:
+    @param_kwargs(["include_secret_custom_attributes"])
+    def retrieve(self, device_id: str, **kwargs) -> Response:
         """Retrieve one device.
         :param device_id: id of the device
         :param include_secret_custom_attributes: include data for secret custom values; default is True (the
                                                  SimpleMDM default is False)"""
-        kwargs["params"] = {"include_secret_custom_attributes": inc_secret_attrs}
         return self.get(device_id, **kwargs)
 
-    def create(self, name: str, group_id: str, **kwargs) -> Response:
+    @all_params(["name"])
+    @param_kwargs(_param_kwargs["create"])
+    def create(self, **kwargs) -> Response:
         """Create a device.
         :param name: device name that appears within SimpleMDM (this is not the device hostname)
         :param group_id: id of the group to initially assign the device to"""
-        kwargs["params"] = {"name": name, "group_id": group_id}
         return self.post(**kwargs)
 
-    @params_or_required(param_keys=["name", "device_name"])
-    def update_device(
-        self, device_id: str, name: Optional[str] = None, device_name: Optional[str] = None, **kwargs
-    ) -> Response:
+    @any_params(["name", "device_name"])
+    @param_kwargs(_param_kwargs["update"])
+    def update(self, device_id: str, **kwargs) -> Response:
         """Update name/device name for a device.
         :param device_id: id of the device
-        :param include_secret_custom_attributes: include data for secret custom values; default is True (the
-                                                 SimpleMDM default is False)"""
-        kwargs["params"] = {}
-
-        if name:
-            kwargs["params"]["name"] = name
-
-        if device_name:
-            kwargs["params"]["device_name"] = device_name
-
+        :param name: device name that appears within SimpleMDM (this is not the device hostname)
+        :param device_name: the device hostname"""
         return self.patch(device_id, **kwargs)
 
-    def remove_device(self, device_id: str) -> Response:
+    def remove(self, device_id: str, **kwargs) -> Response:
         """Delete a device.
         :param device_id: id of the device"""
-        return self.delete(device_id)
+        return self.delete(f"{device_id}", **kwargs)
 
+    @url_suffixes("profiles")
     @paginate
     def list_profiles(self, device_id: str, **kwargs) -> Generator[dict, None, None]:
         """List profiles assigned to a device.
         :param device_id: id of the device"""
-        return self.get(f"{device_id}/profiles", **kwargs)
+        return self.get(f"{device_id}", **kwargs)
 
     @url_suffixes("installed_apps")
     @paginate
     def list_applications(self, device_id: str, **kwargs) -> Generator[dict, None, None]:
         """List applications installed on a device
         :param device_id: id of the device"""
-        return self.get(f"{device_id}/installed_apps", **kwargs)
+        return self.get(f"{device_id}", **kwargs)
 
     @url_suffixes("users")
     @paginate
@@ -91,8 +102,10 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.get(f"{device_id}", **kwargs)
 
+    @all_params(_param_kwargs["delete_user"])
+    @param_kwargs(_param_kwargs["delete_user"])
     @url_suffixes("users", ["user_id"])
-    def delete_user(self, device_id: str, user_id: str, **kwargs) -> Response:
+    def delete_user(self, device_id: str, **kwargs) -> Response:
         """Delete a user account from a device.
         :param device_id: id of the device
         :param user_id: id of the user to delete"""
@@ -110,19 +123,14 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.post(f"{device_id}", **kwargs)
 
+    @any_params(_param_kwargs["restart"])
+    @param_kwargs(_param_kwargs["restart"])
     @url_suffixes("reboot")
-    def restart(
-        self,
-        device_id: str,
-        rebuild_kernel_cache: Optional[bool] = False,
-        notify_user: Optional[bool] = False,
-        **kwargs,
-    ) -> Response:
+    def restart(self, device_id: str, **kwargs) -> Response:
         """Reboot a device.
         :param device_id: id of the device
         :param rebuild_kernel_cache: optional, rebuild kernal cache on reboot; default is False
         :param notify_user: optional, notify a user if there is one signed in; default is False"""
-        kwargs["params"] = {"rebuild_kernel_cache": rebuild_kernel_cache, "notify_user": notify_user}
         return self.post(f"{device_id}", **kwargs)
 
     @url_suffixes("shutdown")
@@ -131,34 +139,16 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.post(f"{device_id}", **kwargs)
 
-    @pin_length("pin", 6)
-    @all_digits("pin")
+    @param_kwargs(_param_kwargs["lock"])
+    @validate_pin("pin", 6)
     @url_suffixes("lock")
-    def lock(
-        self,
-        device_id: str,
-        message: Optional[str] = None,
-        phone_num: Optional[str] = None,
-        pin: Optional[str] = None,
-        **kwargs,
-    ) -> Response:
+    def lock(self, device_id: str, **kwargs) -> Response:
         """Lock a device.
         Note, the 'pin' parameter is required if the target device is a Mac.
         :param device_id: id of the device
         :param message: optional, message string to display on lock screen (iOS 7+, macOS 10.14+)
-        :param phone_num: optional, phone number to display on the lock screen
+        :param phone_number: optional, phone number to display on the lock screen
         :param pin: optional (but required for Mac), a 6 digit number the device will require to unlock"""
-        kwargs["params"] = {}
-
-        if message:
-            kwargs["params"]["message"] = message
-
-        if phone_num:
-            kwargs["params"]["phone_number"] = phone_num
-
-        if pin:
-            kwargs["params"]["pin"] = pin
-
         return self.post(f"{device_id}", **kwargs)
 
     @url_suffixes("clear_passcode")
@@ -197,12 +187,13 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.post(f"{device_id}", **kwargs)
 
+    @all_params(_param_kwargs["set_admin_password"])
+    @param_kwargs(_param_kwargs["set_admin_password"])
     @url_suffixes("set_admin_password")
-    def set_admin_password(self, device_id: str, password: str, **kwargs) -> Response:
+    def set_admin_password(self, device_id: str, **kwargs) -> Response:
         """Set the macOS Auto Admin password for a Mac.
         :param device_id: id of the device
-        :param password: password string (cleartext)"""
-        kwargs["params"] = {"new_password": password}
+        :param new_password: password string (cleartext)"""
         return self.post(f"{device_id}", **kwargs)
 
     @url_suffixes("rotate_admin_password")
@@ -211,27 +202,22 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.post(f"{device_id}", **kwargs)
 
-    @pin_length("pin", 6)
-    @all_digits("pin")
+    @param_kwargs(_param_kwargs["wipe"])
+    @validate_pin("pin", 6)
     @url_suffixes("wipe")
-    def wipe(self, device_id: str, pin: Optional[str] = None, **kwargs) -> Response:
+    def wipe(self, device_id: str, **kwargs) -> Response:
         """Wipe a device (uses Erase all Content and Settings); device is unenrolled from SimpleMDM and
         restored to a factory default configuration.
         Note: a pin is required for Intel macOS devices that do not have a T2 chip, must be a six digit number
         :param device_id: id of the device
-        :param pin: six digit number (for Intel macOS devices that do not have a T2 chip)"""
+        :param pin: optional six digit number (for Intel macOS devices that do not have a T2 chip)"""
         return self.post(f"{device_id}", **kwargs)
 
-    @validate_param_opts(
-        [
-            ("os_update_mode", ["smart_update", "download_only", "notify_only", "install_asap", "force_update"]),
-            ("version_type", ["latest_minor_version", "latest_major_version"]),
-        ]
-    )
+    @any_params(_param_kwargs["update_os"])
+    @param_kwargs(_param_kwargs["update_os"])
+    @validate_param_opts(_param_opts_validation["update_os"])
     @url_suffixes("update_os")
-    def update_os(
-        self, device_id: str, os_update_mode: Optional[str] = None, version_type: Optional[str] = None, **kwargs
-    ) -> Response:
+    def update_os(self, device_id: str, **kwargs) -> Response:
         """Update the OS on a device.
         Note: the 'os_update_mode' parameter is required for macOS devices, it is ignored by iOS/tvOS/iPadOS devices
         :param device_id: id of the device
@@ -239,14 +225,6 @@ class Devices(SimpleMDMConnector):
                                'smart_update', 'download_only', 'notify_only', 'install_asap', 'force_update'
         :param version_type: optional string indicating the update version type to apply; valid options are:
                              'latest_minor_version', 'latest_major_version'; the default is 'latest_major_version'"""
-        kwargs["params"] = {}
-
-        if os_update_mode:
-            kwargs["params"]["os_update_mode"] = os_update_mode
-
-        if version_type:
-            kwargs["params"]["version_type"] = version_type
-
         return self.post(f"{device_id}", **kwargs)
 
     @url_suffixes("remote_desktop")
@@ -275,12 +253,13 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.delete(f"{device_id}", **kwargs)
 
+    @all_params(_param_kwargs["set_timezone"])
+    @param_kwargs(_param_kwargs["set_timezone"])
     @url_suffixes("set_time_zone")
-    def set_timezone(self, device_id: str, time_zone, **kwargs) -> Response:
+    def set_timezone(self, device_id: str, **kwargs) -> Response:
         """Set a timezone (using a TZ Identifier value: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
         :param device_id: id of the device
         :param time_zone: string value (TZ Identifier) representing the timezone to set"""
-        kwargs["params"] = {"time_zone": time_zone}
         return self.post(f"{device_id}", **kwargs)
 
     @url_suffixes("unenroll")
@@ -295,15 +274,26 @@ class Devices(SimpleMDMConnector):
         :param device_id: id of the device"""
         return self.get(f"{device_id}", **kwargs)
 
+    @all_params(_param_kwargs["set_device_attributes"])
+    @param_kwargs(_param_kwargs["set_device_attributes"])
     @url_suffixes("custom_attribute_values", ["attr_name"])
-    def set_device_attribute(self, device_id: str, attr_name: str, attr_value: str, **kwargs) -> Response:
+    def set_device_attribute(self, device_id: str, **kwargs) -> Response:
         """Set custom attribute value for a device.
         :param device_id: id of the device
         :param attr_name: the custom attribute name
-        :param attr_value: the value to apply to the custom attribute for the device"""
-        kwargs["params"] = {"value": attr_value}
+        :param value: the value to apply to the custom attribute for the device"""
         return self.get(f"{device_id}", **kwargs)
 
+    @param_kwargs(_param_kwargs["set_multiple_device_attributes"])
+    @url_suffixes("custom_attribute_values")
+    def set_multiple_device_attributes(self, device_id: str, **kwargs) -> Response:
+        """Set multiple custom attribute values for a device.
+        :param device_id: id of the device
+        :param json_data: JSON data object"""
+        return self.put(f"{device_id}")
+
+    @any_params(_param_kwargs["enable_lost_mode"])
+    @param_kwargs(_param_kwargs["enable_lost_mode"])
     @url_suffixes("lost_mode")
     def enable_lost_mode(self, device_id: str, **kwargs) -> Response:
         """Enable lost mode on a device.
