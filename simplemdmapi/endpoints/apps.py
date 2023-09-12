@@ -133,3 +133,34 @@ class ManagedAppConfigs(SimpleMDMConnector):
         """Push an update to managed app config for all devices (only required if making a change through the API).
         :param app_id: id of the app"""
         return self.post(f"{app_id}", **kwargs)
+
+
+class InstalledApps(SimpleMDMConnector):
+    """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#installed-app-configs"""
+
+    def __init__(self, endpoint: str = "installed_apps", dry_run: bool = False) -> None:
+        self.endpoint = endpoint
+        self.dry_run = dry_run
+        super().__init__()
+
+    def retrieve(self, app_id: str, **kwargs) -> Response:
+        """Retrieve details of an installed app.
+        :param app_id: id of the app"""
+        return self.get(f"{app_id}", **kwargs)
+
+    @url_suffixes("request_management")
+    def request_management(self, app_id: str, **kwargs) -> Response:
+        """Request management of an unmanaged app on a device; iOS, tvOS, and macOS (11+).
+        :param app_id: id of the app"""
+        return self.post(f"{app_id}", **kwargs)
+
+    @url_suffixes("update")
+    def install_update(self, app_id: str, **kwargs) -> Response:
+        """Request the device update an app.
+        :param app_id: id of the app"""
+        return self.post(f"{app_id}", **kwargs)
+
+    def uninstall(self, app_id: str, **kwargs) -> Response:
+        """Request a device to uninstall an app.
+        :param app_id: id of the app"""
+        return self.delete(f"{app_id}", **kwargs)
