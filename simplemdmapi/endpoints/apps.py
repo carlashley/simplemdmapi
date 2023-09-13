@@ -2,30 +2,7 @@ from requests.models import Response
 from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import file_upload, paginate, param_kwargs, url_suffixes
-from .._validators import all_params, any_params, bad_combo_params, validate_param_opts
-
-_param_kwargs = {
-    "list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "apps.create": ["app_store_id", "binary", "bundle_id", "name"],
-    "apps.update": ["binary", "deploy_to", "name"],
-    "managed_app.create": ["key", "value", "value_type"],
-}
-
-_param_opts_validation = {
-    "apps.update": [
-        ("deploy_to", ["all", "none", "outdated"]),
-    ],
-    "managed_app.create": [
-        (
-            "value_type",
-            ["boolean", "date", "float", "float array", "integer", "integer array", "string", "string array"],
-        ),
-    ],
-}
+from .._decorators import file_upload, method_params, paginate, url_suffixes
 
 
 class Apps(SimpleMDMConnector):
@@ -36,7 +13,30 @@ class Apps(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
-    @param_kwargs(_param_kwargs["list_all"])
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "create": {
+                "all_params": ["app_store_id", "binary", "bundle_id", "name"],
+                "any_params": ["app_store_id", "bundle_id", "binary"],
+                "inc_params": (
+                    ["app_store_id", "bundle_id", "binary"],
+                    ["app_store_id", "bundle_id", "name"],
+                ),
+                "file_param": "binary",
+            },
+            "update": {
+                "all_params": ["binary", "deploy_to", "name"],
+                "any_params": ["binary", "deploy_to", "name"],
+                "file_param": "binary",
+                "validate": {
+                    "deploy_to": ["all", "none", "outdated"],
+                },
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all apps.
@@ -44,16 +44,14 @@ class Apps(SimpleMDMConnector):
         :param starting_after: app id to start pagination after; default is 0 for first app"""
         return self.get(**kwargs)
 
+    @method_params
     def retrieve(self, app_id: str, **kwargs) -> Response:
         """Retrieve one app.
         :param app_id: id of the app"""
-        return self.get(f"{app_id}", **kwargs)
+        return self.get(app_id, **kwargs)
 
-    @any_params(["app_store_id", "bundle_id", "binary"])
-    @bad_combo_params("binary", ["app_store_id", "bundle_id"])
-    @bad_combo_params("name", ["app_store_id", "bundle_id"])
-    @param_kwargs(_param_kwargs["apps.create"])
-    @file_upload("binary")
+    @method_params
+    @file_upload
     def create(self, **kwargs) -> Response:
         """Add's an app to SimpleMDM from either App Store, or via upload.
         :param app_store_id: Apple App Store ID of the app to add; for example: '1090161858'
@@ -64,10 +62,8 @@ class Apps(SimpleMDMConnector):
                      on the binary if this param is not provided, can be used with 'binary'"""
         return self.post(**kwargs)
 
-    @any_params(_param_kwargs["apps.update"])
-    @param_kwargs(_param_kwargs["apps.update"])
-    @validate_param_opts(_param_opts_validation["apps.update"])
-    @file_upload("binary")
+    @method_params
+    @file_upload
     def update(self, app_id: str, **kwargs) -> Response:
         """Update name/app name for a app.
         :param app_id: id of the app
@@ -78,19 +74,19 @@ class Apps(SimpleMDMConnector):
                           all devices regardless if the app is already installed, when set to 'non' the app will not
                           be deployed; default is 'none'.
         :param name: app name that appears within SimpleMDM (this is not the app hostname)"""
-        return self.patch(f"{app_id}", **kwargs)
+        return self.patch(app_id, **kwargs)
 
     def remove(self, app_id: str, **kwargs) -> Response:
         """Delete an app.
         :param app_id: id of the app"""
-        return self.delete(f"{app_id}", **kwargs)
+        return self.delete(app_id, **kwargs)
 
     @url_suffixes("installs")
     @paginate
     def list_installs(self, app_id: str, **kwargs) -> Generator[dict, None, None]:
         """List devices an application is installed on
         :param app_id: id of the app"""
-        return self.get(f"{app_id}", **kwargs)
+        return self.get(app_id, **kwargs)
 
 
 class ManagedAppConfigs(SimpleMDMConnector):
@@ -101,15 +97,35 @@ class ManagedAppConfigs(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
+        self._method_kwargs = {
+            "create": {
+                "all_params": ["key", "value", "value_type"],
+                "req_params": ["key"],
+                "validate": {
+                    "create": [
+                        "boolean",
+                        "date",
+                        "float",
+                        "float array",
+                        "integer",
+                        "integer array",
+                        "string",
+                        "string array",
+                    ],
+                },
+            },
+            "delete": {
+                "all_params": ["config_id"],
+            }
+        }
+
     @url_suffixes("managed_configs")
     def get_config(self, app_id: str, **kwargs) -> Generator[dict, None, None]:
         """List all managed app configs.
         :param app_id: id of the app"""
-        return self.get(f"{app_id}", **kwargs)
+        return self.get(app_id, **kwargs)
 
-    @all_params(["key"])
-    @param_kwargs(_param_kwargs["managed_app.create"])
-    @validate_param_opts(_param_opts_validation["managed_app.create"])
+    @method_params
     @url_suffixes("managed_configs")
     def create(self, app_id: str, **kwargs) -> Response:
         """Create a managed app config.
@@ -120,19 +136,21 @@ class ManagedAppConfigs(SimpleMDMConnector):
                            format with timezone, for example: '2023-09-31T09:30:00-10:00'), 'float' (0.123),
                            'float array' (comma separated, 0.1,1.1,2.9), 'integer' (32), 'integer array' (comma
                            separated, 1,2,3,4), 'string', 'string array' (quoted & comma separated, "hello","world")"""
-        return self.post(f"{app_id}", **kwargs)
+        return self.post(app_id, **kwargs)
 
-    @url_suffixes("managed_configs")
+    @method_params
+    @url_suffixes("managed_configs", ["config_id"])
     def delete_config(self, app_id: str, **kwargs) -> Generator[dict, None, None]:
         """Delete managed app config.
-        :param app_id: id of the app"""
-        return self.delete(f"{app_id}", **kwargs)
+        :param app_id: id of the app
+        :param config_id: id of the managed config"""
+        return self.delete(app_id, **kwargs)
 
     @url_suffixes("managed_configs/push")
     def push_update(self, app_id: str, **kwargs) -> Generator[dict, None, None]:
         """Push an update to managed app config for all devices (only required if making a change through the API).
         :param app_id: id of the app"""
-        return self.post(f"{app_id}", **kwargs)
+        return self.post(app_id, **kwargs)
 
 
 class InstalledApps(SimpleMDMConnector):
@@ -146,21 +164,21 @@ class InstalledApps(SimpleMDMConnector):
     def retrieve(self, app_id: str, **kwargs) -> Response:
         """Retrieve details of an installed app.
         :param app_id: id of the app"""
-        return self.get(f"{app_id}", **kwargs)
+        return self.get(app_id, **kwargs)
 
     @url_suffixes("request_management")
     def request_management(self, app_id: str, **kwargs) -> Response:
         """Request management of an unmanaged app on a device; iOS, tvOS, and macOS (11+).
         :param app_id: id of the app"""
-        return self.post(f"{app_id}", **kwargs)
+        return self.post(app_id, **kwargs)
 
     @url_suffixes("update")
     def install_update(self, app_id: str, **kwargs) -> Response:
         """Request the device update an app.
         :param app_id: id of the app"""
-        return self.post(f"{app_id}", **kwargs)
+        return self.post(app_id, **kwargs)
 
     def uninstall(self, app_id: str, **kwargs) -> Response:
         """Request a device to uninstall an app.
         :param app_id: id of the app"""
-        return self.delete(f"{app_id}", **kwargs)
+        return self.delete(app_id, **kwargs)

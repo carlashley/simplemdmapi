@@ -1,4 +1,5 @@
 from functools import wraps
+from itertools import combinations
 from requests.adapters import HTTPAdapter, Retry
 from requests.models import Response
 from typing import Callable, Optional
@@ -74,64 +75,139 @@ def _consume_status_kwargs(self, **kwargs) -> tuple[list[int], list[int]]:
     return (ignore, retry)
 
 
-def param_kwargs(params: list[str]) -> Callable:
-    """Decorator for internal methods that have parameters to be passed as params to the underlying request.
-    :param params: list of strings representing the kwarg keys that are params."""
+def _generate_bad_combinations(params: tuple) -> list[str]:
+    """Generate all possible bad combinations of paramters.
+    :param params: tuple of list of strings or list of strings representing the name of each parameter that
+                   can't be combined"""
+    result = []
 
-    def wrap_function(fn: Callable) -> Callable:
-        """Wraps the method that has the params to parse.
-        :param fn: the callable being decorated"""
+    for p in params:
+        _min, _max = len(p) - 1, len(p)
+        cmbns = [*[[c for c in combinations(p, n)] for n in range(_min, _max)][0]]
+        result.extend(cmbns)
 
-        @wraps(fn)
-        def wrap_actions(self, *args, **kwargs) -> Callable:
-            """Wrapper to perform actions on the wrapped fucntion from 'wrap_function'."""
-            print(f"pre param_kwargs: {kwargs}")
-            rqst_params, kwargs = _consume_param_kwargs(params, **kwargs)
-            kwargs["params"] = rqst_params
-            print(f"post param_kwargs: {kwargs}")
-
-            # raise type error for unexpected kwargs
-            for k, _ in kwargs.items():
-                if k not in [*params, *_requests_kwargs, "ignore_statuses", "retry_statuses"]:
-                    raise TypeError(f"{fn.__name__}() got an unexpected keyword argument {k!r}")
-
-            return fn(self, *args, **kwargs)
-
-        return wrap_actions
-
-    return wrap_function
+    if result:
+        return result
 
 
-def file_upload(file_fn: str) -> Callable:
+def method_params(fn) -> Callable:
+    """Decorator for parsing the endpoint method parameters into a 'params' keyword argument dictionary
+    object that is then parsed back in a cleaned up kwargs object.
+    :param fn: the function that is being decorated"""
+
+    @wraps(fn)
+    def wrap_actions(self, *args, **kwargs) -> Callable:
+        """Wrapper to perform actions on the wrapped fucntion from 'wrap_function'."""
+        _class = self.__class__.__name__
+        _fnctn = fn.__name__
+        param_conf = self._method_kwargs.get(_class, {}).get(_fnctn, {})
+        all_params = param_conf.get("all_params", [])
+        any_params = param_conf.get("any_params", [])
+        req_params = param_conf.get("req_params", [])
+        inc_params = param_conf.get("inc_params", [])
+        val_params = param_conf.get("validate", {})
+        file_param = param_conf.get("file_param")
+        bad_combos = _generate_bad_combinations(inc_params)
+
+        # Check all required method parameters are provided
+        if req_params:
+            for req_param in req_params:
+                if req_param not in kwargs:
+                    raise TypeError(f"{_fnctn}() missing required keyword-only parameter: {req_param!r}")
+
+        # Check any optional parameters where at least one optional parameter is required
+        if any_params:
+            if not any(any_param in kwargs for any_param in any_params):
+                raise TypeError(f"{_fnctn}() missing at least one optional keyword-only parameter: {any_params}")
+
+        # Check any incompatible parameter combinations
+        if inc_params:
+            for kwarg in kwargs:
+                for combo in bad_combos:
+                    for bad_kwarg in combo:
+                        if bad_kwarg in kwargs and kwarg in inc_params and not bad_kwarg == kwarg:
+                            raise AttributeError(f"{_fnctn}() {bad_kwarg!r} not permitted with {kwarg!r}")
+
+        # Validate any parameter values
+        if val_params:
+            for param, values in val_params.items():
+                value = kwargs.get(param)
+
+                if value and value not in values:
+                    err = f"{_fnctn}() unexpected value {value!r} for {param!r}, expecting one of: {values}"
+                    raise ValueError(err)
+
+        files = {file_param: kwargs.get(file_param)}
+        request_params = {
+            k: v for k, v in kwargs.copy().items() if k in all_params and file_param and not k == file_param
+        }
+        request_params["files"] = files
+        kwargs = {k: v for k, v in kwargs.copy().items() if k not in all_params}
+        kwargs["params"] = request_params
+
+        return fn(self, *args, **kwargs)
+
+    return wrap_actions
+
+
+# def param_kwargs(params: list[str]) -> Callable:
+#     """Decorator for internal methods that have parameters to be passed as params to the underlying request.
+#     :param params: list of strings representing the kwarg keys that are params."""
+#
+#     def wrap_function(fn: Callable) -> Callable:
+#         """Wraps the method that has the params to parse.
+#         :param fn: the callable being decorated"""
+#
+#         @wraps(fn)
+#         def wrap_actions(self, *args, **kwargs) -> Callable:
+#             """Wrapper to perform actions on the wrapped fucntion from 'wrap_function'."""
+#             print(f"param_kwargs decorator: pre: {kwargs}")
+#             rqst_params, kwargs = _consume_param_kwargs(params, **kwargs)
+#             kwargs["params"] = rqst_params
+#             print(f"param_kwargs decorator: post: {kwargs}")
+#
+#             # raise type error for unexpected kwargs
+#             for k, _ in kwargs.items():
+#                 if k not in [*params, *_requests_kwargs, "ignore_statuses", "retry_statuses"]:
+#                     raise TypeError(f"{fn.__name__}() got an unexpected keyword argument {k!r}")
+#
+#             return fn(self, *args, **kwargs)
+#
+#         return wrap_actions
+#
+#     return wrap_function
+
+
+def file_upload(fn: Callable) -> Callable:
     """Decorator for internal methods that have a file upload to process.
-    :param file_fn: name of the field in the kwargs["params"] dict that contains the file name being uploaded"""
+    :param fn: the function that is being decorated"""
 
-    def wrap_function(fn: Callable) -> Callable:
-        """Wraps the method being used ot perform the POST method.
-        :param fn: the callable being decorated"""
+    @wraps(fn)
+    def wrap_actions(self, *args, **kwargs) -> Response:
+        """Wrapper to perform actions on the wrapped function from 'wrap_function'"""
+        # note, some API methods have an option to upload a file, depending on the parameters
+        # passed, for example, the apps.create method can optionally upload a file to SimpleMDM,
+        # so test for the existence of an upload file fieldname, and return a post response
+        # either way
+        _class = self.__class__.__name__
+        _fnctn = fn.__name__
+        param_conf = self._method_kwargs.get(_class, {}).get(_fnctn, {})
+        file_fn = param_conf.get("file_param")
+        print(f"file_upload pre processing args, kwargs: {args}, {kwargs}")
 
-        @wraps(fn)
-        def wrap_actions(self, *args, **kwargs) -> Response:
-            """Wrapper to perform actions on the wrapped function from 'wrap_function'"""
-            # note, some API methods have an option to upload a file, depending on the parameters
-            # passed, for example, the apps.create method can optionally upload a file to SimpleMDM,
-            # so test for the existence of an upload file fieldname, and return a post response
-            # either way
-            if file_fn in kwargs.get("params", {}):
-                filename = kwargs["params"].get(file_fn)
+        if file_fn in kwargs.get("params", {}):
+            filename = kwargs["params"].get(file_fn)
 
-                del kwargs["params"][file_fn]  # not needed in params anymore
+            del kwargs["params"][file_fn]  # not needed in params anymore
 
-                with open(filename, "rb") as f:
-                    kwargs["files"] = {file_fn: f}
-                    response = self.post(*args, **kwargs)
-                    return response
-            else:
-                return self.post(*args, **kwargs)
+            with open(filename, "rb") as f:
+                kwargs["files"] = {file_fn: f}
+                response = self.post(*args, **kwargs)
+                return response
+        else:
+            return self.post(*args, **kwargs)
 
-        return wrap_actions
-
-    return wrap_function
+    return wrap_actions
 
 
 def request(method: str) -> Callable:
@@ -145,6 +221,7 @@ def request(method: str) -> Callable:
         @wraps(fn)  # keep docstrings, and arguments from original function
         def wrap_actions(self, *args, **kwargs) -> Response:
             """Wrapper to perform actions on the wrapped function from 'wrap_function'."""
+            print(f"request dry_run: {self.dry_run}")
             print(f"request kwargs (start): {kwargs}")
             # pre-process arguments, consuming args and kwargs
             print(f"request {kwargs}")
@@ -171,15 +248,19 @@ def request(method: str) -> Callable:
                 ),
             )
 
-            # now perform the request
-            response = self.session.request(method, url, *rqst_args, **rqst_kwargs)
+            if self.dry_run and not method.lower() == "get":
+                print(f"perform {method!r} on {url!r} with args {rqst_args} and kwargs {rqst_kwargs}")
+            else:
+                return None
+            # # now perform the request
+            # response = self.session.request(method, url, *rqst_args, **rqst_kwargs)
 
-            # handle any exceptions that should raise a HTTP status exception, except when it's
-            # ok to safely ignore those errors
-            if response.status_code not in ignore:
-                response.raise_for_status()
+            # # handle any exceptions that should raise a HTTP status exception, except when it's
+            # # ok to safely ignore those errors
+            # if response.status_code not in ignore:
+            #     response.raise_for_status()
 
-            return response  # return the object
+            # return response  # return the object
 
         return wrap_actions
 
@@ -197,9 +278,9 @@ def paginate(fn: Callable) -> Callable:
         has_more = True
         existing_params = kwargs.get("params", {})
         kwargs, params = _consume_request_kwargs(**kwargs)  # don't use consume_param_kwargs, keep actual params intact
-        params.update(existing_params)
         params.setdefault("limit", 100)
         params.setdefault("starting_after", 0)
+        params.update(existing_params)
         kwargs["params"] = params
 
         while has_more:
