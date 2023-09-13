@@ -102,7 +102,7 @@ class ManagedAppConfigs(SimpleMDMConnector):
                 "all_params": ["key", "value", "value_type"],
                 "req_params": ["key"],
                 "validate": {
-                    "create": [
+                    "value_type": [
                         "boolean",
                         "date",
                         "float",
