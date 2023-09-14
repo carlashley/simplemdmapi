@@ -2,40 +2,7 @@ from requests.models import Response
 from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import file_upload, paginate, param_kwargs, url_suffixes
-from .._validators import all_params, any_params, bad_combo_params, validate_param_opts
-
-_param_kwargs = {
-    "scripts.list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "scripts.create": ["name", "variable_support", "file"],
-    "script_jobs.list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "script_jobs.create": [
-        "script_id",
-        "device_ids",
-        "group_ids",
-        "assignment_group_ids",
-        "custom_attribute",
-        "custom_attribute_regex",
-    ],
-}
-
-_param_opts_validation = {
-    "scripts.update": [
-        ("deploy_to", ["all", "none", "outdated"]),
-    ],
-    "managed_script.create": [
-        (
-            "value_type",
-            ["boolean", "date", "float", "float array", "integer", "integer array", "string", "string array"],
-        ),
-    ],
-}
+from .._decorators import file_upload, method_params, paginate
 
 
 class Scripts(SimpleMDMConnector):
@@ -46,7 +13,29 @@ class Scripts(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
-    @param_kwargs(_param_kwargs["scripts.list_all"])
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "create": {
+                "all_params": ["name", "variable_support", "file"],
+                "req_params": ["file", "name"],
+                "file_param": "file",
+                "validate": {
+                    "variable_support": ["0", "1", 0, 1],
+                },
+            },
+            "update": {
+                "all_params": ["name", "variable_support", "file"],
+                "req_params": ["file", "name"],
+                "file_param": "file",
+                "validate": {
+                    "variable_support": ["0", "1", 0, 1],
+                },
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all scripts.
@@ -57,12 +46,10 @@ class Scripts(SimpleMDMConnector):
     def retrieve(self, script_id: str, **kwargs) -> Response:
         """Retrieve one script.
         :param script_id: id of the script"""
-        return self.get(f"{script_id}", **kwargs)
+        return self.get(script_id, **kwargs)
 
-    @all_params(["name", "file"])
-    @any_params(_param_kwargs["scripts.create"])
-    @param_kwargs(_param_kwargs["scripts.create"])
-    @file_upload("file")
+    @method_params
+    @file_upload
     def create(self, **kwargs) -> Response:
         """Add a new script.
         :param file: string representation of the file path to upload, first line must contain a valid shebang, such
@@ -72,9 +59,8 @@ class Scripts(SimpleMDMConnector):
                                  '0' to disable"""
         return self.post(**kwargs)
 
-    @any_params(_param_kwargs["scripts.create"])
-    @param_kwargs(_param_kwargs["scripts.create"])
-    @file_upload("file")
+    @method_params
+    @file_upload
     def update(self, script_id: str, **kwargs) -> Response:
         """Update an existing script.
         :param script_id: id of the script
@@ -83,12 +69,12 @@ class Scripts(SimpleMDMConnector):
         :param name: required, name of the script (this is how it is listed in the Admin UI)
         :param variable_support: optional, enable or disable variable support in the script, use '1' to enable,
                                  '0' to disable"""
-        return self.patch(f"{script_id}", **kwargs)
+        return self.patch(script_id, **kwargs)
 
     def remove(self, script_id: str, **kwargs) -> Response:
         """Delete a script.
         :param script_id: id of the script"""
-        return self.delete(f"{script_id}", **kwargs)
+        return self.delete(script_id, **kwargs)
 
 
 class ScriptJobs(SimpleMDMConnector):
@@ -99,7 +85,25 @@ class ScriptJobs(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
-    @param_kwargs(_param_kwargs["script_jobs.list_all"])
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "create": {
+                "all_params": [
+                    "script_id",
+                    "device_ids",
+                    "group_ids",
+                    "assignment_group_ids",
+                    "custom_attribute",
+                    "custom_attribute_regex",
+                ],
+                "req_params": ["script_id"],
+                "any_params": ["device_ids", "group_ids", "assignment_group_ids"],
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all script jobs.
@@ -110,11 +114,9 @@ class ScriptJobs(SimpleMDMConnector):
     def retrieve(self, job_id: str, **kwargs) -> Response:
         """Retrieve one script job.
         :param job_id: id of the script job"""
-        return self.get(f"{job_id}", **kwargs)
+        return self.get(job_id, **kwargs)
 
-    @all_params(["script_id"])
-    @any_params(["device_ids", "group_ids", "assignment_group_ids"])
-    @param_kwargs(_param_kwargs["cscript_jobs.reate"])
+    @method_params
     def create(self, **kwargs) -> Response:
         """Add a new script job.
         :param script_id: required, id of the script to run on devices
@@ -133,4 +135,4 @@ class ScriptJobs(SimpleMDMConnector):
     def cancel(self, job_id: str, **kwargs) -> Response:
         """Cancel a script job.
         :param job_id: id of the script job"""
-        return self.delete(f"{job_id}", **kwargs)
+        return self.delete(job_id, **kwargs)

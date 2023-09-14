@@ -2,18 +2,7 @@ from requests.models import Response
 from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import paginate, param_kwargs, url_suffixes
-from ..validators import all_params
-
-_param_kwargs = {
-    "list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "send_invitations": ["contact"],
-}
-
-_param_opts_validation = {}
+from .._decorators import method_params, paginate, url_suffixes
 
 
 class Enrollments(SimpleMDMConnector):
@@ -24,7 +13,17 @@ class Enrollments(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
-    @param_kwargs(_param_kwargs["list_all"])
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "send_invitations": {
+                "all_params": ["contact"],
+                "req_params": ["contact"],
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all enrollments.
@@ -37,8 +36,7 @@ class Enrollments(SimpleMDMConnector):
         :param enr_id: id of the enrollment"""
         return self.get(enr_id, **kwargs)
 
-    @all_params(_param_kwargs["send_invitations"])
-    @param_kwargs(_param_kwargs["send_invitations"])
+    @method_params
     @url_suffixes("invitations")
     def send_invitations(self, enr_id: str, **kwargs) -> Response:
         """Clone a group group.

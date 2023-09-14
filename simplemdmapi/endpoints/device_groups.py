@@ -2,16 +2,7 @@ from requests.models import Response
 from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import paginate, param_kwargs, url_suffixes
-from .._validators import all_params
-
-_param_kwargs = {
-    "list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "set_group_attribute": ["attr_name", "value"],
-}
+from .._decorators import method_params, paginate, url_suffixes
 
 
 class DeviceGroups(SimpleMDMConnector):
@@ -22,6 +13,21 @@ class DeviceGroups(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "assign_device": {
+                "all_params": ["device_id"],
+                "req_params": ["device_id"],
+            },
+            "set_group_attribute": {
+                "all_params": ["attr_name", "value"],
+                "req_params": ["value"],
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all group groups.
@@ -34,6 +40,7 @@ class DeviceGroups(SimpleMDMConnector):
         :param group_id: id of the group to retrieve"""
         return self.get(group_id, **kwargs)
 
+    @method_params
     @url_suffixes("devices", ["device_id"])
     def assign_device(self, group_id: str, device_id: str, **kwargs) -> Response:
         """Assigns a device to a group.
@@ -53,13 +60,11 @@ class DeviceGroups(SimpleMDMConnector):
         :param group_id: id of the group to retrieve"""
         return self.get(group_id, **kwargs)
 
-    @all_params(_param_kwargs["set_group_attribute"])
-    @param_kwargs(_param_kwargs["set_group_attribute"])
+    @method_params
     @url_suffixes("custom_attribute_values", ["attr_name"])
     def set_group_attribute(self, group_id: str, attr_name: str, attr_value: str, **kwargs) -> Response:
         """Set a custom attribute for a device group.
         :param group_id: id of the group to retrieve
         :param attr_name: name of the attribute being created
         :param attr_value: value of the attribute"""
-        params = {"value": attr_value}
-        return self.put(group_id, params=params, **kwargs)
+        return self.put(group_id, **kwargs)

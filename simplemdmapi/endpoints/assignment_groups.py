@@ -2,27 +2,7 @@ from requests.models import Response
 from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import paginate, param_kwargs, url_suffixes
-from .._validators import all_params, any_params, validate_param_opts
-
-_param_kwargs = {
-    "list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "create": ["auto_deploy", "install_type", "name", "type"],
-    "update": ["auto_deploy", "name"],
-    "assign_app": ["app_id"],
-    "assign_device_grp": ["device_group_id"],
-    "assign_device": ["device_id"],
-}
-
-_param_opts_validation = {
-    "create": [
-        ("auto_deploy", [True, False])("install_type", ["managed", "self_serve"]),
-        ("type", ["munki", "standard"]),
-    ]
-}
+from .._decorators import method_params, paginate, url_suffixes
 
 
 class AssignmentGroups(SimpleMDMConnector):
@@ -32,6 +12,55 @@ class AssignmentGroups(SimpleMDMConnector):
         self.endpoint = endpoint
         self.dry_run = dry_run
         super().__init__()
+
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "create": {
+                "all_params": ["auto_deploy", "install_type", "name", "type"],
+                "req_params": ["name"],
+                "inc_params": (
+                    ["app_store_id", "bundle_id", "binary"],
+                    ["app_store_id", "bundle_id", "name"],
+                ),
+                "validate": {
+                    "auto_deploy": [True, False],
+                    "install_type": ["managed", "self_serve"],
+                    "type": ["munki", "standard"],
+                }
+            },
+            "update": {
+                "all_params": ["auto_deploy", "name"],
+                "validate": {
+                    "deploy_to": ["all", "none", "outdated"],
+                },
+            },
+            "assign_app": {
+                "all_params": ["app_id"],
+                "req_params": ["app_id"],
+            },
+            "unassign_app": {
+                "all_params": ["app_id"],
+                "req_params": ["app_id"],
+            },
+            "assign_device_group": {
+                "all_params": ["device_group_id"],
+                "req_params": ["device_group_id"],
+            },
+            "unassign_device_group": {
+                "all_params": ["device_group_id"],
+                "req_params": ["device_group_id"],
+            },
+            "assign_device": {
+                "all_params": ["device_id"],
+                "req_params": ["device_id"],
+            },
+            "unassign_device": {
+                "all_params": ["device_id"],
+                "req_params": ["device_id"],
+            },
+        }
 
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
@@ -43,12 +72,9 @@ class AssignmentGroups(SimpleMDMConnector):
     def retrieve(self, group_id: str, **kwargs) -> Response:
         """Retrieve one assignment group.
         :param device_id: id of the assignment group"""
-        return self.get(f"{group_id}", **kwargs)
+        return self.get(group_id, **kwargs)
 
-    @all_params(["name"])
-    @any_params(["auto_deploy", "install_type", "type"])
-    @param_kwargs(_param_kwargs["create"])
-    @validate_param_opts(_param_opts_validation["create"])
+    @method_params
     def create(self, **kwargs) -> Response:
         """Create an assignment group.
         :param name: required, string representation of the assignment group
@@ -60,77 +86,76 @@ class AssignmentGroups(SimpleMDMConnector):
                              or 'self_serve' for optional install; default is 'managed'"""
         return self.post(**kwargs)
 
-    @any_params(_param_kwargs["update"])
-    @param_kwargs(_param_kwargs["update"])
+    @method_params
     def update(self, group_id: str, **kwargs) -> Response:
         """Update an assignment group.
         :param group_id: id of the assignment group
         :param name: name of the assignment group
         :param auto_deploy: optional, determines if the app is automatically pushed to devices when they join
                             related device groups; default is 'True'"""
-        return self.patch(f"{group_id}", **kwargs)
+        return self.patch(group_id, **kwargs)
 
     def delete(self, group_id: str, **kwargs) -> Response:
         """Delete an assignment group.
         :param group_id: id of the assignment group"""
-        return self.delete(f"{group_id}", **kwargs)
+        return self.delete(group_id, **kwargs)
 
-    @all_params(_param_kwargs["assign_app"])
+    @method_params
     @url_suffixes("apps", ["app_id"])
     def assign_app(self, group_id: str, **kwargs) -> Response:
         """Assign an app to an assignment group.
         :param group_id: id of the assignment group
         :param app_id: id of the application"""
-        return self.post(f"{group_id}")
+        return self.post(group_id)
 
-    @all_params(_param_kwargs["assign_app"])
+    @method_params
     @url_suffixes("apps", ["app_id"])
     def unassign_app(self, group_id: str, **kwargs) -> Response:
         """Unassign an app from an assignment group.
         :param group_id: id of the assignment group
         :param app_id: id of the application"""
-        return self.delete(f"{group_id}", **kwargs)
+        return self.delete(group_id, **kwargs)
 
-    @all_params(_param_kwargs["assign_device_grp"])
+    @method_params
     @url_suffixes("device_groups", ["device_group_id"])
     def assign_device_group(self, group_id: str, **kwargs) -> Response:
         """Assign a device group to an assignment group.
         :param group_id: id of the assignment group
         :param device_group_id: id of the device group"""
-        return self.post(f"{group_id}")
+        return self.post(group_id)
 
-    @all_params(_param_kwargs["assign_device_grp"])
+    @method_params
     @url_suffixes("device_groups", ["device_group_id"])
     def unassign_device_group(self, group_id: str, **kwargs) -> Response:
         """Unassign a device group from an assignment group.
         :param group_id: id of the assignment group
         :param device_group_id: id of the device group"""
-        return self.delete(f"{group_id}", **kwargs)
+        return self.delete(group_id, **kwargs)
 
-    @all_params(_param_kwargs["assign_device"])
+    @method_params
     @url_suffixes("devices", ["device_id"])
     def assign_device(self, group_id: str, **kwargs) -> Response:
         """Assign a device to an assignment group.
         :param group_id: id of the assignment group
-        :param device_group_id: id of the device group"""
-        return self.post(f"{group_id}")
+        :param device_id: id of the device"""
+        return self.post(group_id)
 
-    @all_params(_param_kwargs["assign_device"])
+    @method_params
     @url_suffixes("devices", ["device_id"])
     def unassign_device(self, group_id: str, **kwargs) -> Response:
         """Unassign a device from an assignment group.
         :param group_id: id of the assignment group
-        :param device_group_id: id of the device group"""
-        return self.delete(f"{group_id}", **kwargs)
+        :param device_id: id of the device"""
+        return self.delete(group_id, **kwargs)
 
     @url_suffixes("push_apps")
     def push_apps(self, group_id: str, **kwargs) -> Response:
         """Push apps to devices associated with the assignment group.
         :param group_id: id of the assignment group"""
-        return self.post(f"{group_id}")
+        return self.post(group_id)
 
     @url_suffixes("update_apps")
     def update_apps(self, group_id: str, **kwargs) -> Response:
         """Update apps on devices associated with the assignment group.
         :param group_id: id of the assignment group"""
-        return self.delete(f"{group_id}", **kwargs)
+        return self.delete(group_id, **kwargs)

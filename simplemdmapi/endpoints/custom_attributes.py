@@ -1,25 +1,8 @@
 from requests.models import Response
-from typing import Generator, Optional
+from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import paginate, param_kwargs
-from .._validators import all_params, any_params, validate_param_opts
-
-_param_kwargs = {
-    "list_all": [
-        "starting_after",
-        "limit",
-    ],
-    "create": ["name", "default_value"],
-    "update": ["default_value"],
-}
-
-_param_opts_validation = {
-    "update_os": [
-        ("os_update_mode", ["smart_update", "download_only", "notify_only", "install_asap", "force_update"]),
-        ("version_type", ["latest_minor_version", "latest_major_version"]),
-    ]
-}
+from .._decorators import method_params, paginate
 
 
 class CustomAttributes(SimpleMDMConnector):
@@ -33,7 +16,20 @@ class CustomAttributes(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
-    @param_kwargs(_param_kwargs["list_all"])
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+            "create": {
+                "all_params": ["default_value", "name"],
+                "req_params": ["name"],
+            },
+            "update": {
+                "all_params": ["default_value"],
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all custom attributes.
@@ -44,25 +40,23 @@ class CustomAttributes(SimpleMDMConnector):
     def retrieve(self, attr_id: str, **kwargs) -> Response:
         """Retrieve one device.
         :param attr_id: id of the custom attribute"""
-        return self.get(f"{attr_id}", **kwargs)
+        return self.get(attr_id, **kwargs)
 
-    @all_params(["name"])
-    @any_params(_param_kwargs["create"])
-    @param_kwargs(_param_kwargs["create"])
+    @method_params
     def create(self, **kwargs) -> Response:
         """Create a custom attribute.
         :param name: custom attribute name
         :param default_value: optional default value the custom attribute will pre-fill if no value provided"""
         return self.post(**kwargs)
 
-    @param_kwargs(_param_kwargs["update"])
+    @method_params
     def update_attribute(self, attr_id: str, **kwargs) -> Response:
         """Update attribute.
         :param attr_id: id of the custom attribute to update
         :param default_value: optional default value the custom attribute will pre-fill if no value provided"""
-        return self.patch(f"{attr_id}", **kwargs)
+        return self.patch(attr_id, **kwargs)
 
     def delete_attribute(self, attr_id: str, **kwargs) -> Response:
         """Delete attribute.
         :param attr_id: id of the custom attribute to delete"""
-        return self.delete(f"{attr_id}", **kwargs)
+        return self.delete(attr_id, **kwargs)

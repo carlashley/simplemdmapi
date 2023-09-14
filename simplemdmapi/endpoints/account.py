@@ -1,7 +1,7 @@
 from requests.models import Response
 
 from ..connector import SimpleMDMConnector
-from .._decorators import method_params, file_upload, url_suffixes
+from .._decorators import file_upload, method_params, url_suffixes
 
 
 class Account(SimpleMDMConnector):
@@ -15,6 +15,7 @@ class Account(SimpleMDMConnector):
         self._method_kwargs = {
             "update": {
                 "all_params": ["name", "apple_store_country_code"],
+                "any_params": ["name", "apple_store_country_code"],
             },
         }
 

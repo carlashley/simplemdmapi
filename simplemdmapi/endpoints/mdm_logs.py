@@ -2,17 +2,7 @@ from requests.models import Response
 from typing import Generator
 
 from ..connector import SimpleMDMConnector
-from .._decorators import paginate, param_kwargs
-
-_param_kwargs = {
-    "list_all": [
-        "serial_number",
-        "starting_after",
-        "limit",
-    ],
-}
-
-_param_opts_validation = {}
+from .._decorators import method_params, paginate
 
 
 class Logs(SimpleMDMConnector):
@@ -23,7 +13,13 @@ class Logs(SimpleMDMConnector):
         self.dry_run = dry_run
         super().__init__()
 
-    @param_kwargs(_param_kwargs["list_all"])
+        self._method_kwargs = {
+            "list_all": {
+                "all_params": ["limit", "starting_after"],
+            },
+        }
+
+    @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
         """List all logs.
@@ -35,4 +31,4 @@ class Logs(SimpleMDMConnector):
     def retrieve(self, log_id: str, **kwargs) -> Response:
         """Retrieve one log entry.
         :param log_id: id of the log entry"""
-        return self.get(f"{log_id}", **kwargs)
+        return self.get(log_id, **kwargs)
