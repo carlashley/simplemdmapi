@@ -36,7 +36,7 @@ def _consume_url(*args) -> Optional[tuple[str, list]]:
 
 
 def _consume_request_kwargs(**kwargs) -> tuple[dict, dict]:
-    """Parses out any keyword arguments that belong to requests.Session calls from those
+    """Parses out any keyword arguments that belong to 'requests.Session' calls from those
     that belong to a decorated request function and returns a tuple object with seperate kwarg dicts.
     :param **kwargs: kwargs from a function decorated by 'request'"""
     func_kwargs, rqst_kwargs = {}, {}
@@ -51,8 +51,8 @@ def _consume_request_kwargs(**kwargs) -> tuple[dict, dict]:
 
 
 def _consume_status_kwargs(self, **kwargs) -> tuple[list[int], list[int]]:
-    """Parse a function's keyword arguments for any ignorable/retry status code lists.
-    :param **kwargs: kwargs from a function"""
+    """Parse function keyword arguments for any ignorable/retry status code lists.
+    :param **kwargs: kwargs from a function decorated by 'request'"""
     ignore = [*kwargs.get("ignore_statuses", []), *self.HTTP_IGNORE_STATUS_ERR]
     retry = [*kwargs.get("retry_statuses", []), *self.HTTP_RETRY_STATUS_LIST]
 
@@ -62,7 +62,8 @@ def _consume_status_kwargs(self, **kwargs) -> tuple[list[int], list[int]]:
 def method_params(fn) -> Callable:
     """Decorator for parsing the endpoint method parameters into a 'params' keyword argument dictionary
     object that is then parsed back in a cleaned up kwargs object.
-    :param fn: the function that is being decorated"""
+    :param fn: the function that is being decorated; these should be SimpleMDM API methods from 'endpoints',
+               such as 'endpoints.devices.Devices.create'"""
 
     @wraps(fn)
     def wrap_actions(self, *args, **kwargs) -> Callable:
@@ -99,7 +100,7 @@ def method_params(fn) -> Callable:
 
         if file:
             kwargs["files"] = {file_param: file}
-            del func_kwargs[file_param]
+            del func_kwargs[file_param]  # not needed, so don't pass it and cause issues elsewhere
 
         # left over function kwargs get put into the 'params' key as other
         # decorators/methods rely on this existing
@@ -112,7 +113,8 @@ def method_params(fn) -> Callable:
 
 def file_upload(fn: Callable) -> Callable:
     """Decorator for internal methods that have a file upload to process.
-    :param fn: the function that is being decorated"""
+    :param fn: the function that is being decorated; these should be SimpleMDM API methods from 'endpoints',
+               such as 'endpoints.account.PushCertificate.push_certificate_update'"""
 
     @wraps(fn)
     def wrap_actions(self, *args, **kwargs) -> Response:
@@ -137,7 +139,7 @@ def file_upload(fn: Callable) -> Callable:
 
 
 def request(method: str) -> Callable:
-    """Decorator for internal methods that require a requests.Session method call.
+    """Decorator for internal methods that require a 'requests.Session' method call.
     :param method: the REST method action to perform, for example 'delete', 'get', 'patch', 'post', 'put'"""
 
     def wrap_function(fn: Callable) -> Callable:
@@ -191,7 +193,8 @@ def request(method: str) -> Callable:
 
 def paginate(fn: Callable) -> Callable:
     """Decorator for API methods that require paginating a response from a 'get' request.
-    :param fn: callable"""
+    :param fn: the method being paginated; these should be SimpleMDM API methods from 'endpoints', such as
+               'endpoints.devices.Devices.list_all'"""
 
     @wraps(fn)
     def wrapper_for_paginating(self, *args, **kwargs):
@@ -223,15 +226,24 @@ def paginate(fn: Callable) -> Callable:
 
 
 def url_suffixes(suffix: str, add_param_vals_to_url: Optional[list] = []):
-    """Decorator for adding an additional suffix to the base url and endpoint, along with
-    and additional values from kwargs provided to the API method, for example, adding 'bluetooth'
-    to 'https://a.simplemdm.com/api/v1/devices/{id}' to become:
-        'https://a.simplemdm.com/api/v1/devices/{id}/bluetooth'
-    Note: This decorator should be applied as the last decorator of a method.
-    Items in the 'add_kwargs_vals_to_url' are processed in order, and any matching kwarg value is
-    then added to the URL, for example, turning url_suffixes('custom_attribute_values', ["attr_name"])
-    into:
-        https://a.simplemdm.com/api/v1/devices/{id}/custom_attribute_values/{attr_name}"""
+    """Decorator for adding an additional suffix to the urls for certain SimpleMDM API methods that
+    have additonal paths after a parameter like 'device_id'.
+    Additionally, parameters from the 'endpoints' method can be subsequently added after the suffix.
+
+    For example, by specifying 'bluetooth' as the 'suffix' value, the 'https://a.simplemdm.com/api/v1/devices/{id}'
+    url will be modified to become 'https://a.simplemdm.com/api/v1/devices/{id}/bluetooth'.
+
+    Items in the 'add_param_vals_to_url' are processed in order, and any matching param value is
+    then added to the URL, for example, turning "@url_suffixes('custom_attribute_values', ['attr_name'])"
+    into 'https://a.simplemdm.com/api/v1/devices/{id}/custom_attribute_values/{attr_name}''
+
+    The 'new_path' value will be the default argument returned in 'fn(self, *args, **kwargs)' if there is no
+    other existing parameter that would ordinarily be the consumed as the url path to join to the base url.
+    For example, if there is no '{id}' for 'https://a.simplemdm.com/v1/devices/{id}' and 'bluetooth' is the
+    suffix being added, then the url created will be 'https://a.simplemdm.com/v1/devices/bluetooth', this
+    behaviour may change to raising a ValueError in a future update if this behaviour is troublesome.
+
+    Note: This decorator should be applied as the last decorator of a method."""
 
     def wrapper_for_suffixing(fn: Callable) -> Callable:
         """Performs the suffix actions."""
