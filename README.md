@@ -25,40 +25,16 @@ variable, but this is not recommended).
 - `SIMPLEMDM_TOKEN` actual token string for authentication or path to a plain text file containing the token string (on a single line); defaults to `/var/root/simplemdm_token`
 
 ### Use
-Each API method implemented has the ability to pass an expanded dictionary as keyword args (AKA [kwargs](https://realpython.com/python-kwargs-and-args/)), while some specific API methods have arguments that are optional or required (or a combination of).
-
-Keyword arguments passed in to an API method in this package are treated as arguments to pass on to the underlying `requests` calls; this is useful for overriding the global session settings such as timeouts for individual API calls, or if you have different authentication/header needs for specific API calls.
-
-An example using the `devices` endpoint:
 ```
->>> from pprint import pprint
->>> from simplemdmapi import devices
->>>
->>> # An example to list all devices (this method paginates the devices endpoint and returns a reconstructed
->>> # dictionary representing the objects returned).
->>> pprint(devices.list_all())
-{'data': [{'attributes': {[redacted]}],
- 'has_more': False}
->>>
->>> # An example to search all the devices for a specific serial number using the optional 'search' argument.
->>> pprint(devices.list_all(search="[serial]"))
-{'data': [{'attributes': {[redacted]}],
- 'has_more': False}
->>>
->>> # An example to search all the devices for a specific serial number using the optional 'search' argument
->>> # and include secret custom attributes.
->>> pprint(devices.list_all(search="C07DD03ZPJH7", include_secret_custom_attributes=True))
-{'data': [{'attributes': {[redacted]}],
- 'has_more': False}
->>>
->>> # An example to search all the devices for a specific serial number using the optional 'search' argument
->>> # and include secret custom attributes that also passes on an expanded dictionary as keyword arguments
->>> # that are used to override various `requests.session` parameters.
->>> pprint(devices.list_all(search="C07DD03ZPJH7", include_secret_custom_attributes=True, **{"timeout": (1, 100)})
-{'data': [{'attributes': {[redacted]}],
- 'has_more': False}
->>>
->>> # An example of restarting a specific device.
->>> devices.restart(device_id="420")
-<Response [202]>
+from simplemdmap.endpoints.devices import Devices
+
+
+mdm_devices = Devices()
+
+
+enrolled_devices = [*mdm_devices.list_all(include_awaiting_enrollment=True, search="Mike's iPhone")]
+
+
+new_device = mdm_devices.create(name="Joe's Mac", group_id=420)
+print(new_device.status_code)
 ```
