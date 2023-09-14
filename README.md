@@ -37,4 +37,8 @@ enrolled_devices = [*mdm_devices.list_all(include_awaiting_enrollment=True, sear
 
 new_device = mdm_devices.create(name="Joe's Mac", group_id=420)
 print(new_device.status_code)
+
+
+lost_mode_on = mdm_devices.enable_lost_mode(device_id=420)
+lost_mode_off = mdm_devices.disable_lost_mode(device_id=420)
 ```
