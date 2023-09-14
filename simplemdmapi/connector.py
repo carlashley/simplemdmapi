@@ -40,7 +40,6 @@ class SimpleMDMConnector(StatusesMixin, TokenMixin):
     @request("delete")
     def delete(self, *args, **kwargs):
         """DELETE request method.
-        Usage: self.delete(url)
         :param *args: non keyword arguments
         :param **kwargs: keyword arguments"""
         return
@@ -48,7 +47,6 @@ class SimpleMDMConnector(StatusesMixin, TokenMixin):
     @request("get")
     def get(self, *args, **kwargs):
         """GET request method.
-        Usage: self.get(url)
         :param *args: non keyword arguments
         :param **kwargs: keyword arguments"""
         return
@@ -56,7 +54,6 @@ class SimpleMDMConnector(StatusesMixin, TokenMixin):
     @request("patch")
     def patch(self, *args, **kwargs):
         """PATCH request method.
-        Usage: self.patch(url, id="1", binary="/path/to/app.pkg", "name": "HelloWorld")
         :param *args: non keyword arguments
         :param **kwargs: keyword arguments"""
         return
@@ -64,7 +61,6 @@ class SimpleMDMConnector(StatusesMixin, TokenMixin):
     @request("post")
     def post(self, *args, **kwargs):
         """POST request method.
-        Usage: self.post(url, id="1", binary="/path/to/app.pkg", "name": "HelloWorld")
         :param *args: non keyword arguments
         :param **kwargs: keyword arguments"""
         return
@@ -72,7 +68,6 @@ class SimpleMDMConnector(StatusesMixin, TokenMixin):
     @request("put")
     def put(self, *args, **kwargs):
         """PUT request method.
-        Usage: self.put(url, id="1", binary="/path/to/app.pkg", "name": "HelloWorld")
         :param *args: non keyword arguments
         :param **kwargs: keyword arguments"""
         return
