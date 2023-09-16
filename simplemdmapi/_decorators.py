@@ -68,7 +68,6 @@ def method_params(fn) -> Callable:
     @wraps(fn)
     def wrap_actions(self, *args, **kwargs) -> Callable:
         """Wrapper to perform actions on the wrapped fucntion from 'wrap_function'."""
-        print(f"method_params args: {args}, kwargs: {kwargs}")
         _fnctn = fn.__name__
         param_conf = self._method_kwargs.get(_fnctn, {})
 
