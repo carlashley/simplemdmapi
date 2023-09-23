@@ -26,7 +26,7 @@ variable, but this is not recommended).
 
 ### Use
 ```
-from simplemdmap.endpoints.devices import Devices
+from simplemdmap import Devices
 
 
 mdm_devices = Devices()
