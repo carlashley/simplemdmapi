@@ -1,9 +1,9 @@
 from requests.models import Response
 from typing import Generator
 
-from ..connector import SimpleMDMConnector
-from .._decorators import method_params, paginate, url_suffixes
-from .._validators import validate_pin
+from .. import SimpleMDMConnector
+from ..decorators import method_params, paginate, url_suffixes
+from ..validators import validate_pin
 
 
 class Devices(SimpleMDMConnector):
@@ -122,7 +122,7 @@ class Devices(SimpleMDMConnector):
     def list_profiles(self, device_id: str, **kwargs) -> Generator[dict, None, None]:
         """List profiles assigned to a device.
         :param device_id: id of the device"""
-        return self.get(device_id, **kwargs)
+        return self.get(f"{device_id}/profiles", **kwargs)
 
     @url_suffixes("installed_apps")
     @paginate

@@ -1,8 +1,8 @@
 from requests.models import Response
 from typing import Generator
 
-from ..connector import SimpleMDMConnector
-from .._decorators import file_upload, method_params, paginate
+from .. import SimpleMDMConnector
+from ..decorators import method_params, paginate
 
 
 class Scripts(SimpleMDMConnector):
@@ -49,7 +49,6 @@ class Scripts(SimpleMDMConnector):
         return self.get(script_id, **kwargs)
 
     @method_params
-    @file_upload
     def create(self, **kwargs) -> Response:
         """Add a new script.
         :param file: string representation of the file path to upload, first line must contain a valid shebang, such
@@ -60,7 +59,6 @@ class Scripts(SimpleMDMConnector):
         return self.post(**kwargs)
 
     @method_params
-    @file_upload
     def update(self, script_id: str, **kwargs) -> Response:
         """Update an existing script.
         :param script_id: id of the script

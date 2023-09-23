@@ -1,8 +1,8 @@
 from requests.models import Response
 from typing import Generator
 
-from ..connector import SimpleMDMConnector
-from .._decorators import file_upload, method_params, paginate, url_suffixes
+from .. import SimpleMDMConnector
+from ..decorators import method_params, paginate, url_suffixes
 
 
 class DEPServers(SimpleMDMConnector):
@@ -46,8 +46,8 @@ class DEPDevices(SimpleMDMConnector):
             },
         }
 
-    @paginate
     @url_suffixes("dep_devices")
+    @paginate
     def list_all(self, server_id: str, **kwargs) -> Generator[dict, None, None]:
         """List all DEP devices associated with a DEP server.
         :param server_id: the DEP server id"""
@@ -82,7 +82,6 @@ class PushCertificate(SimpleMDMConnector):
         return self.get(**kwargs)
 
     @method_params
-    @file_upload
     def push_certificate_update(self, **kwargs) -> Response:
         """Upload a new push certificate, replacing the existing push certificate.
         :param file: string path representing the local file path to the certificate from the Apple Push

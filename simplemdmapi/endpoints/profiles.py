@@ -1,11 +1,11 @@
 from requests.models import Response
 from typing import Generator
 
-from ..connector import SimpleMDMConnector
-from .._decorators import method_params, paginate, url_suffixes
+from .. import SimpleMDMConnector
+from ..decorators import method_params, paginate, url_suffixes
 
 
-class profiles(SimpleMDMConnector):
+class Profiles(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#profiles"""
 
     def __init__(self, endpoint: str = "profiles", dry_run: bool = False) -> None:

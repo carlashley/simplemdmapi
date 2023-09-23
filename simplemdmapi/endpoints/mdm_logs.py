@@ -1,8 +1,8 @@
 from requests.models import Response
 from typing import Generator
 
-from ..connector import SimpleMDMConnector
-from .._decorators import method_params, paginate
+from .. import SimpleMDMConnector
+from ..decorators import method_params, paginate
 
 
 class Logs(SimpleMDMConnector):

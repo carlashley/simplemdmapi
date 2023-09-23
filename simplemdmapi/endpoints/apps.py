@@ -1,8 +1,8 @@
 from requests.models import Response
 from typing import Generator
 
-from ..connector import SimpleMDMConnector
-from .._decorators import file_upload, method_params, paginate, url_suffixes
+from .. import SimpleMDMConnector
+from ..decorators import method_params, paginate, url_suffixes
 
 
 class Apps(SimpleMDMConnector):
@@ -51,7 +51,6 @@ class Apps(SimpleMDMConnector):
         return self.get(app_id, **kwargs)
 
     @method_params
-    @file_upload
     def create(self, **kwargs) -> Response:
         """Add's an app to SimpleMDM from either App Store, or via upload.
         :param app_store_id: Apple App Store ID of the app to add; for example: '1090161858'
@@ -63,7 +62,6 @@ class Apps(SimpleMDMConnector):
         return self.post(**kwargs)
 
     @method_params
-    @file_upload
     def update(self, app_id: str, **kwargs) -> Response:
         """Update name/app name for a app.
         :param app_id: id of the app

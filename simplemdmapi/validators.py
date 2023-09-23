@@ -1,6 +1,17 @@
+import errno
+import os
+
 from functools import wraps
 from itertools import combinations
+from pathlib import Path
 from typing import Callable
+
+from .utils import pkg_is_signed
+
+
+class PackageNotSigned(Exception):
+    """Package not Signed Exception handling."""
+    pass
 
 
 def _generate_bad_combinations(params: tuple) -> list[str]:
@@ -18,7 +29,7 @@ def _generate_bad_combinations(params: tuple) -> list[str]:
         return result
 
 
-def _required_params_check(kwargs: dict, req_params: list, fn_name: str) -> None:
+def validate_required(kwargs: dict, req_params: list, fn_name: str) -> None:
     """Check kwargs for required parameters.
     :param kwargs: dictionary object of kwargs
     :param req_params: list of required params
@@ -28,7 +39,7 @@ def _required_params_check(kwargs: dict, req_params: list, fn_name: str) -> None
             raise TypeError(f"{fn_name}() missing required keyword-only parameter: {req_param!r}")
 
 
-def _any_params_check(kwargs: dict, any_params: list, fn_name) -> None:
+def validate_any(kwargs: dict, any_params: list, fn_name: str) -> None:
     """Check kwargs for any paramters that are optional but where one or more must be provided.
     :param kwargs: dictionary object of kwargs
     :param any_params: list of any optional 'required' params
@@ -37,7 +48,7 @@ def _any_params_check(kwargs: dict, any_params: list, fn_name) -> None:
         raise TypeError(f"{fn_name}() missing at least one optional keyword-only parameter: {any_params}")
 
 
-def _incompatible_params_check(kwargs: dict, inc_params: list, fn_name) -> None:
+def validate_incompatible(kwargs: dict, inc_params: list, fn_name: str) -> None:
     """Check kwargs for any paramters that are incompatible with other parameters.
     :param kwargs: dictionary object of kwargs
     :param inc_params: list of any incompatible parameters
@@ -51,7 +62,7 @@ def _incompatible_params_check(kwargs: dict, inc_params: list, fn_name) -> None:
                     raise AttributeError(f"{fn_name}() {bad_kwarg!r} not permitted with {kwarg!r}")
 
 
-def _validate_param_options(kwargs: dict, val_params: dict, fn_name) -> None:
+def validate_param_opts(kwargs: dict, val_params: dict, fn_name: str) -> None:
     """Validate values for parameters that only accept specific values.
     :param kwargs: dictionary object of kwargs
     :param val_params: dict of any value parameters to check, {"param": ["valid", "values"]}
@@ -64,7 +75,7 @@ def _validate_param_options(kwargs: dict, val_params: dict, fn_name) -> None:
             raise ValueError(err)
 
 
-def validate_pin(param: str, length: int):
+def validate_pin(param: str, length: int) -> None:
     """Decorator for performing a validation on the wrapped API method.
     :param param: the name of the parameter to validate length for
     :param length: expected character length"""
@@ -89,3 +100,14 @@ def validate_pin(param: str, length: int):
         return wrapper_b
 
     return wrapper_a
+
+
+def validate_package(pkg: Path, fn_name: str) -> None:
+    """Validate a package installer file is signed.
+    :param pkg: path object
+    :param fn_name: function name for exceptions"""
+    if not pkg.exists():
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(pkg))
+    else:
+        if not pkg_is_signed(pkg):
+            raise PackageNotSigned(f"{fn_name}() {str(pkg)!r} is not signed, only signed packages can be uploaded.")

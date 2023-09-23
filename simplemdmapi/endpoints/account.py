@@ -1,7 +1,7 @@
 from requests.models import Response
 
-from ..connector import SimpleMDMConnector
-from .._decorators import file_upload, method_params, url_suffixes
+from .. import SimpleMDMConnector
+from ..decorators import method_params, url_suffixes
 
 
 class Account(SimpleMDMConnector):
@@ -52,7 +52,6 @@ class PushCertificate(SimpleMDMConnector):
         return self.get(**kwargs)
 
     @method_params
-    @file_upload
     def push_certificate_update(self, **kwargs) -> Response:
         """Upload a new push certificate, replacing the existing push certificate.
         :param file: string path representing the local file path to the certificate from the Apple Push
