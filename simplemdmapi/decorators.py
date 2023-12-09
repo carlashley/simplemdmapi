@@ -2,7 +2,7 @@ from functools import wraps
 from pathlib import Path
 from requests.models import Response
 from typing import Callable, Optional
-from .utils import consume_func_kwargs, consume_kwargs, generate_url, session_retry
+from .utils import api_error_check, consume_func_kwargs, consume_kwargs, generate_url, session_retry
 from .validators import validate_any, validate_incompatible, validate_package, validate_param_opts, validate_required
 
 
@@ -126,7 +126,8 @@ def request(method: str) -> Callable:
                     response = self.session.request(method, url, **rqst_kwargs)
 
                     if response.status_code not in ignore or response.status_code not in self.HTTP_RETRY_STATUS_LIST:
-                        response.raise_for_status()
+                        api_error_check(response)  # this should catch API specific error responses
+                        response.raise_for_status()  # this should catch HTTP connection exceptions that are missed
 
                     return response
             else:

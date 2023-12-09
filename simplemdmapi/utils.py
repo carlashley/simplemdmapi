@@ -3,6 +3,8 @@ import subprocess
 
 from pathlib import Path
 from requests.adapters import HTTPAdapter, Retry
+from requests.exceptions import JSONDecodeError
+from requests.response import Response
 from typing import Any, Optional
 
 _function_kwargs: list[str] = ["ignore_statuses", "retry_statuses", "file_upload"]
@@ -24,6 +26,27 @@ _requests_kwargs: list[str] = [
     "cert",
     "json",
 ]
+
+
+class APIException(Exception):
+    """Exception class for errors returned by the API."""
+    pass
+
+
+def api_error_check(r: Response) -> None:
+    """Performs a check on the API response object for any error messages in the JSON body.
+    :param r: requests.Response object"""
+    api_errors = None
+
+    try:
+        api_errors = r.json().get("errors")
+    except JSONDecodeError:
+        pass
+    finally:
+        if api_errors is not None:
+            err_strings = [f"'{err.get('title')}'" for err in api_errors if err.get("title")]
+
+            raise APIException(f"SimpleMDM error/s: {', '.join(err_strings)}, HTTP {r.status_code}")
 
 
 def urljoin(*paths, base: str, sep: Optional[str] = "/"):
