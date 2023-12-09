@@ -125,7 +125,7 @@ def request(method: str) -> Callable:
                 else:
                     response = self.session.request(method, url, **rqst_kwargs)
 
-                    if response.status_code not in ignore:
+                    if response.status_code not in ignore or response.status_code not in self.HTTP_RETRY_STATUS_LIST:
                         response.raise_for_status()
 
                     return response
