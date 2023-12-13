@@ -24,20 +24,18 @@ variable, but this is not recommended).
 - `SIMPLEMDM_SLEEP_WAIT` number of seconds (int or float representation) to sleep between each request (to avoid API rate limiting); defaults to `1.0`
 - `SIMPLEMDM_TOKEN` actual token string for authentication or path to a plain text file containing the token string (on a single line); defaults to `/var/root/simplemdm_token`
 
-### Use
+### Basic Use
 ```
-from simplemdmap import Devices
+from simplemdmapi.endpoints import Devices
 
 
-mdm_devices = Devices()
+d = Devices()
+# Starred expression expands the generator object from a paginated method.
+devices = [*d.list_all(include_awaiting_enrollment=True, search="Mike's iPhone")]
 
-
-enrolled_devices = [*mdm_devices.list_all(include_awaiting_enrollment=True, search="Mike's iPhone")]
-
-
+# Non paginated methods return the requests.Response object for custom processing/error handling.
 new_device = mdm_devices.create(name="Joe's Mac", group_id=420)
 print(new_device.status_code)
-
 
 lost_mode_on = mdm_devices.enable_lost_mode(device_id=420)
 lost_mode_off = mdm_devices.disable_lost_mode(device_id=420)
