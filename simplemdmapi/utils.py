@@ -2,9 +2,9 @@ import re
 import subprocess
 
 from pathlib import Path
+from requests import Response
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import JSONDecodeError
-from requests.response import Response
 from typing import Any, Optional
 
 _function_kwargs: list[str] = ["ignore_statuses", "retry_statuses", "file_upload"]

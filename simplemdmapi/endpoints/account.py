@@ -27,7 +27,8 @@ class Account(SimpleMDMConnector):
     @method_params
     def update(self, **kwargs) -> Response:
         """Update details about the account.
-        :param kwargs: specific parameters to provide to the underlying requests function."""
+        :param name: name of the account
+        :param apple_store_country_code: the app store country code to use, for example: 'AU'"""
         return self.patch(**kwargs)
 
 

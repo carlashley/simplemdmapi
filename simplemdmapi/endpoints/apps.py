@@ -39,9 +39,7 @@ class Apps(SimpleMDMConnector):
     @method_params
     @paginate
     def list_all(self, **kwargs) -> Generator[dict, None, None]:
-        """List all apps.
-        :param limit: number of objects per page; default is 100 (the SimpleMDM API returns 10 objects by default)
-        :param starting_after: app id to start pagination after; default is 0 for first app"""
+        """List all apps."""
         return self.get(**kwargs)
 
     @method_params

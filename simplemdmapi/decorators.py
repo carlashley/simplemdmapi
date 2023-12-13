@@ -62,13 +62,24 @@ def method_params(fn: Callable) -> Callable:
 def paginate(fn: Callable) -> Callable:
     """Perform pagination action on endpoint methods that require it.
     Note: This decorator must be placed after the 'method_params' and 'url_suffixes' decorators if an API method is
-          decorated with 'method_params' and/or 'url_suffixes'."""
+          decorated with 'method_params' and/or 'url_suffixes'.
+
+    Parameters that can be included in the kwargs of the decorated function that relate to pagination:
+    :param limit: optional limit on the number of objects returned per 'page'; default is 100
+    :param starting_after: optional cursor in the form of an object id, typically this is the last object id
+                           in the response, if unspecified, the API starts at the beginning of the object list
+    :param direction: optional string indicating sort direction, values are either 'asc' or 'desc',
+                      default is 'asc'"""
 
     @wraps(fn)
     def wrap_actions(self, *args, **kwargs) -> Callable:
-        paginate, limit, starting_after = True, 100, 0
+        paginate = True
+        limit = kwargs.get("limit", 100)
+        starting_after = kwargs.get("starting_after", 0)
+        direction = kwargs.get("direction", "asc")
         kwargs.setdefault("limit", limit)
         kwargs.setdefault("starting_after", starting_after)
+        kwargs.setdefault("direction", direction)
 
         if not self.dry_run:
             while paginate:
