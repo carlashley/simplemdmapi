@@ -61,7 +61,5 @@ These other methods are also paginated and will therefore return a dictionary ob
 | Endpoint  | Method |
 | --- | ---- |
 | `Apps` | `list_installs` |
-| --- | ---- |
 | `Devices` | `list_applications` |
-| --- | ---- |
 | `Devices` | `list_users` |
