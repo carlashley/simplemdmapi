@@ -1,5 +1,6 @@
+from pathlib import Path
 from requests.models import Response
-from typing import Generator
+from typing import Generator, Optional
 
 from .. import SimpleMDMConnector
 from ..decorators import method_params, paginate, url_suffixes
@@ -9,10 +10,10 @@ from ..validators import validate_pin
 class Devices(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#devices"""
 
-    def __init__(self, endpoint: str = "devices", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "devices", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "list_all": {
@@ -78,7 +79,7 @@ class Devices(SimpleMDMConnector):
             "enable_lost_mode": {
                 "all_params": ["message", "phone_number", "footnote"],
                 "any_params": ["message", "phone_number", "footnote"],
-            }
+            },
         }
 
     @method_params

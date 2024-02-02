@@ -1,3 +1,5 @@
+from pathlib import Path
+from typing import Optional
 from requests.models import Response
 
 from .. import SimpleMDMConnector
@@ -7,10 +9,10 @@ from ..decorators import method_params, url_suffixes
 class Account(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#account"""
 
-    def __init__(self, endpoint: str = "account", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "account", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "update": {
@@ -35,10 +37,12 @@ class Account(SimpleMDMConnector):
 class PushCertificate(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://api.simplemdm.com/#push-certificate"""
 
-    def __init__(self, endpoint: str = "push_certificate", dry_run: bool = False) -> None:
+    def __init__(
+        self, endpoint: str = "push_certificate", dry_run: bool = False, tkn: Optional[str | Path] = None
+    ) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "update": {
