@@ -7,11 +7,11 @@ from .utils import api_error_check, consume_func_kwargs, consume_kwargs, generat
 from .validators import validate_any, validate_incompatible, validate_package, validate_param_opts, validate_required
 
 
-def _wait(s: int | float) -> None:
-    """Perform a wait between each request.
-    :param s: time value in seconds"""
-    if s > 0:
-        sleep(s)
+# def _wait(s: int | float) -> None:
+#     """Perform a wait between each request.
+#     :param s: time value in seconds"""
+#     if s > 0:
+#         sleep(s)
 
 
 def method_params(fn: Callable) -> Callable:
@@ -83,7 +83,7 @@ def paginate(fn: Callable) -> Callable:
 
         if not self.dry_run:
             while paginate:
-                _wait(self.HTTP_SLEEP_WAIT)
+                # _wait(self.HTTP_SLEEP_WAIT)
                 response = self.get(*args, **kwargs)
                 json_data = response.json()
                 objects = json_data.get("data", [])
@@ -131,7 +131,7 @@ def request(method: str) -> Callable:
             self.session.mount("https://", session_retry(self, retry))
 
             if not self.dry_run:
-                _wait(self.HTTP_SLEEP_WAIT)
+                # _wait(self.HTTP_SLEEP_WAIT)
 
                 if fieldname and rqst_kwargs.get("files"):
                     file = Path(rqst_kwargs["files"].get(fieldname)).expanduser().resolve()
