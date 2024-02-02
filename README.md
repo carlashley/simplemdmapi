@@ -58,10 +58,10 @@ print(apps.retrieve("19347392").json())
 Typically the `.list_all()` methods are paginated and will return a dictionary object, while most other methods will return the response object instead. This is done so that error handling can be customised within your own use cases.
 
 These other methods are also paginated and will therefore return a dictionary object and not a response object:
-| Endpoint  | Method              |
-| --------- | ------___------------- |
-| `Apps`    | `list_installs`     |
-| --------- | ------___------------- |
+| Endpoint  | Method |
+| --- | ---- |
+| `Apps` | `list_installs` |
+| --- | ---- |
 | `Devices` | `list_applications` |
-| --------- | ------___------------- |
-| `Devices` | `list_users`        |
+| --- | ---- |
+| `Devices` | `list_users` |
