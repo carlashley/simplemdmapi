@@ -1,5 +1,6 @@
+from pathlib import Path
 from requests.models import Response
-from typing import Generator
+from typing import Generator, Optional
 
 from .. import SimpleMDMConnector
 from ..decorators import method_params, paginate, url_suffixes
@@ -8,10 +9,10 @@ from ..decorators import method_params, paginate, url_suffixes
 class Apps(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#apps"""
 
-    def __init__(self, endpoint: str = "apps", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "apps", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "list_all": {
@@ -88,10 +89,10 @@ class Apps(SimpleMDMConnector):
 class ManagedAppConfigs(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#managed-app-configs"""
 
-    def __init__(self, endpoint: str = "apps", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "apps", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "create": {
@@ -112,7 +113,7 @@ class ManagedAppConfigs(SimpleMDMConnector):
             },
             "delete": {
                 "all_params": ["config_id"],
-            }
+            },
         }
 
     @url_suffixes("managed_configs")
@@ -152,10 +153,12 @@ class ManagedAppConfigs(SimpleMDMConnector):
 class InstalledApps(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#installed-app-configs"""
 
-    def __init__(self, endpoint: str = "installed_apps", dry_run: bool = False) -> None:
+    def __init__(
+        self, endpoint: str = "installed_apps", dry_run: bool = False, tkn: Optional[str | Path] = None
+    ) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
     def retrieve(self, app_id: str, **kwargs) -> Response:
         """Retrieve details of an installed app.

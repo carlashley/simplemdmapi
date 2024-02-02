@@ -1,5 +1,6 @@
+from pathlib import Path
 from requests.models import Response
-from typing import Generator
+from typing import Generator, Optional
 
 from .. import SimpleMDMConnector
 from ..decorators import method_params, paginate, url_suffixes
@@ -8,10 +9,12 @@ from ..decorators import method_params, paginate, url_suffixes
 class AssignmentGroups(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#apps"""
 
-    def __init__(self, endpoint: str = "assignment_groups", dry_run: bool = False) -> None:
+    def __init__(
+        self, endpoint: str = "assignment_groups", dry_run: bool = False, tkn: Optional[str | Path] = None
+    ) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "list_all": {
@@ -28,7 +31,7 @@ class AssignmentGroups(SimpleMDMConnector):
                     "auto_deploy": [True, False],
                     "install_type": ["managed", "self_serve"],
                     "type": ["munki", "standard"],
-                }
+                },
             },
             "update": {
                 "all_params": ["auto_deploy", "name"],

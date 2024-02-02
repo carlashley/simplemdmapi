@@ -32,6 +32,7 @@ class SimpleMDMConnector:
     def __init__(self, api_vers: str = "v1", tkn: Optional[str | Path] = None, proxies: Optional[dict] = {}) -> None:
         """Initialise class."""
         self.api_vers = api_vers
+        self.tkn = tkn or self._TOKEN
         self.session = self._initialise_session(proxies)
 
     def _initialise_session(self, tkn: str | Path, proxies: Optional[dict] = {}) -> requests.Session:
@@ -39,7 +40,7 @@ class SimpleMDMConnector:
         :param proxies: optional dictionary object representing a proxy configuration."""
         session = requests.Session()
         session.proxies.update(proxies)
-        session.auth = requests.auth.HTTPBasicAuth(self._read_token(self._TOKEN), "")
+        session.auth = requests.auth.HTTPBasicAuth(self._read_token(self.tkn), "")
 
         return session
 

@@ -1,5 +1,6 @@
+from pathlib import Path
 from requests.models import Response
-from typing import Generator
+from typing import Generator, Optional
 
 from .. import SimpleMDMConnector
 from ..decorators import method_params, paginate
@@ -8,10 +9,10 @@ from ..decorators import method_params, paginate
 class Scripts(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#scripts"""
 
-    def __init__(self, endpoint: str = "scripts", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "scripts", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "list_all": {
@@ -78,10 +79,10 @@ class Scripts(SimpleMDMConnector):
 class ScriptJobs(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#script-jobs"""
 
-    def __init__(self, endpoint: str = "script_jobs", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "script_jobs", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "list_all": {

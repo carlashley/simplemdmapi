@@ -1,5 +1,6 @@
+from pathlib import Path
 from requests.models import Response
-from typing import Generator
+from typing import Generator, Optional
 
 from .. import SimpleMDMConnector
 from ..decorators import method_params, paginate
@@ -7,14 +8,17 @@ from ..decorators import method_params, paginate
 
 class CustomAttributes(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#custom-attributes"""
+
     # getting custom attributes for:
     # - devices: use the 'devices.Devices' class
     # - device groups: use the 'device_groups.DeviceGroups' class
 
-    def __init__(self, endpoint: str = "custom_attributes", dry_run: bool = False) -> None:
+    def __init__(
+        self, endpoint: str = "custom_attributes", dry_run: bool = False, tkn: Optional[str | Path] = None
+    ) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "list_all": {

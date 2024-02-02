@@ -1,5 +1,6 @@
+from pathlib import Path
 from requests.models import Response
-from typing import Generator
+from typing import Generator, Optional
 
 from .. import SimpleMDMConnector
 from ..decorators import method_params, paginate, url_suffixes
@@ -8,10 +9,10 @@ from ..decorators import method_params, paginate, url_suffixes
 class DEPServers(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#dep-servers"""
 
-    def __init__(self, endpoint: str = "dep_servers", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "dep_servers", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {}
 
@@ -34,10 +35,10 @@ class DEPServers(SimpleMDMConnector):
 class DEPDevices(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://simplemdm.com/docs/api/#dep-servers"""
 
-    def __init__(self, endpoint: str = "dep_servers", dry_run: bool = False) -> None:
+    def __init__(self, endpoint: str = "dep_servers", dry_run: bool = False, tkn: Optional[str | Path] = None) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "retrieve": {
@@ -64,10 +65,12 @@ class DEPDevices(SimpleMDMConnector):
 class PushCertificate(SimpleMDMConnector):
     """SimpleMDM API Documentation: https://api.simplemdm.com/#push-certificate"""
 
-    def __init__(self, endpoint: str = "push_certificate", dry_run: bool = False) -> None:
+    def __init__(
+        self, endpoint: str = "push_certificate", dry_run: bool = False, tkn: Optional[str | Path] = None
+    ) -> None:
         self.endpoint = endpoint
         self.dry_run = dry_run
-        super().__init__()
+        super().__init__(tkn=tkn)
 
         self._method_kwargs = {
             "update": {
