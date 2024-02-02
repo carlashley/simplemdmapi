@@ -26,9 +26,9 @@ variable, but this is not recommended).
 
 ### Basic Use
 ```
-from simplemdmapi.endpoints import Devices
+from simplemdmapi.endpoints import Apps, Devices
 
-
+# To create an instance of the devices endpoint using the SIMPLEMDM_TOKEN environment variable:
 d = Devices()
 # Starred expression expands the generator object from a paginated method.
 devices = [*d.list_all(include_awaiting_enrollment=True, search="Mike's iPhone")]
@@ -39,4 +39,29 @@ print(new_device.status_code)
 
 lost_mode_on = mdm_devices.enable_lost_mode(device_id=420)
 lost_mode_off = mdm_devices.disable_lost_mode(device_id=420)
+
+
+# You can specify a specific token string or token path if you don't want the token
+# stored in an environment variable, or you simply need to override the environment
+# variable with a different token.
+d = Devices(tkn="R7cCCc4959877DBE6b6c63a8eb1bfe3bfb545fa8fe5AA8b1b2c13e4a7c1c0d1c4d4")
+
+# A file path (the token must be in a plain text file on the first line).
+# It is strongly recommended that this file path only be readable by the user/service
+# account that this package is used by.
+a = Apps(tkn="/Users/Shared/supersecret/simpletoken")
+print(apps.retrieve("19347392").json())
 ```
+
+
+### Paginated methods
+Typically the `.list_all()` methods are paginated and will return a dictionary object, while most other methods will return the response object instead. This is done so that error handling can be customised within your own use cases.
+
+These other methods are also paginated and will therefore return a dictionary object and not a response object:
+| Endpoint  | Method              |
+| --------- | ------___------------- |
+| `Apps`    | `list_installs`     |
+| --------- | ------___------------- |
+| `Devices` | `list_applications` |
+| --------- | ------___------------- |
+| `Devices` | `list_users`        |
