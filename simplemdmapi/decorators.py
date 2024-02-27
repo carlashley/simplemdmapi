@@ -1,11 +1,11 @@
 from functools import wraps
 from pathlib import Path
 from requests.models import Response
-from time import sleep
 from typing import Callable, Optional
 from .utils import api_error_check, consume_func_kwargs, consume_kwargs, generate_url, session_retry
 from .validators import validate_any, validate_incompatible, validate_package, validate_param_opts, validate_required
 
+# from time import sleep
 
 # def _wait(s: int | float) -> None:
 #     """Perform a wait between each request.
@@ -171,12 +171,11 @@ def url_suffixes(sfx: str, params_as_suffixes: Optional[list] = []) -> Callable:
     def wrap_function(fn: Callable) -> Callable:
         @wraps(fn)
         def wrap_actions(self, *args, **kwargs) -> Callable:
-            paths = "/".join([sfx, *[v for k, v in kwargs.items() if k in params_as_suffixes]])
+            paths = "/".join([str(sfx), *[str(v) for k, v in kwargs.items() if k in params_as_suffixes]])
 
-            # update args and kwargs, note, any kwarg key that exists in 'params_as_suffixes' is discarded,
-            # those values are not supposed to be passed in as params as they form the URL being acted on.
+            # update args, kwargs is required for other decorators so leave that alone.
             args = [*args, paths] if args else [paths]
-            kwargs = {k: v for k, v in kwargs.copy().items() if k not in params_as_suffixes}
+            args = ["/".join(str(arg) for arg in args)]
 
             return fn(self, *args, **kwargs)
 
