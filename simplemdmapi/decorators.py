@@ -147,7 +147,7 @@ def request(method: str) -> Callable:
                 else:
                     response = self.session.request(method, url, **rqst_kwargs)
 
-                    if response.status_code not in ignore or response.status_code not in self.HTTP_RETRY_STATUS_LIST:
+                    if response.status_code not in ignore:
                         api_error_check(response)  # this should catch API specific error responses
                         response.raise_for_status()  # this should catch HTTP connection exceptions that are missed
 
