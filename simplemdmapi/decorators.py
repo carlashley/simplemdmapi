@@ -107,40 +107,30 @@ def request(method: str) -> Callable:
     def wrap_function(fn: Callable) -> Callable:
         @wraps(fn)
         def wrap_actions(self, *args, **kwargs) -> Response:
+            url = generate_url(self, *args)
             rqst_kwargs, func_kwargs = consume_kwargs(**kwargs)
             ignore, retry = consume_func_kwargs(self, **func_kwargs)
-            fieldname = func_kwargs.get("file_upload")
-            url = generate_url(self, *args)
-
-            # gotta let uploads take the time they need
-            if not fieldname and not rqst_kwargs.get("files"):
-                rqst_kwargs.setdefault("timeout", (self.HTTP_CONNECT_TIMEOUT, self.HTTP_READ_TIMEOUT))
-
-            if rqst_kwargs.get("json"):
-                rqst_kwargs["headers"] = {"Content-Type": "application/json"}
-
             self.session.mount("https://", session_retry(self, retry))
 
+            if rqst_kwargs.get("json"):  # patch headers to set content type
+                rqst_kwargs["headers"] = {"Content-Type": "application/json"}
+
+            if (fieldname := func_kwargs.get("file_upload")) and (files := rqst_kwargs.get("files")):
+                file = Path(files.get(fieldname)).expanduser().resolve()
+
+                with file.open("rb") as f:  # API expects binary file upload
+                    rqst_kwargs["files"][fieldname] = f  # patch the rqst_kwargs with the opened file value
+            else:
+                rqst_kwargs.setdefault("timeout", (self.HTTP_CONNECT_TIMEOUT, self.HTTP_READ_TIMEOUT))
+
             if not self.dry_run:
-                if fieldname and rqst_kwargs.get("files"):
-                    file = Path(rqst_kwargs["files"].get(fieldname)).expanduser().resolve()
+                response = self.session.request(method, url, **rqst_kwargs)
 
-                    with file.open("rb") as f:
-                        rqst_kwargs["files"][fieldname] = f
-                        response = self.session.request(method, url, **rqst_kwargs)
+                if response.status_code not in ignore:
+                    api_error_check(response)
+                    response.raise_for_status()
 
-                        if response.status_code not in ignore:
-                            response.raise_for_status()
-
-                        return response
-                else:
-                    response = self.session.request(method, url, **rqst_kwargs)
-
-                    if response.status_code not in ignore:
-                        api_error_check(response)  # this should catch API specific error responses
-                        response.raise_for_status()  # this should catch HTTP connection exceptions that are missed
-
-                    return response
+                return response
             else:
                 print(f"Perform {method!r} on {url!r} with kwargs {rqst_kwargs}")
 
